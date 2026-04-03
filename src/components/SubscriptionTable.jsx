@@ -12,23 +12,33 @@ const formatCurrency = (value) => currencyFormatter.format(value);
 
 const STATUS_STYLES = {
   active: {
-    bg: 'rgba(var(--accent-rgb), 0.14)',
-    color: 'var(--accent)',
+    className: 'status-badge status-badge--active',
     label: 'Aktiv',
   },
   paused: {
-    bg: 'rgba(251, 191, 36, 0.14)',
-    color: 'var(--warning)',
+    className: 'status-badge status-badge--paused',
     label: 'Pausiert',
   },
   cancelled: {
-    bg: 'rgba(251, 113, 133, 0.14)',
-    color: 'var(--danger)',
+    className: 'status-badge status-badge--cancelled',
     label: 'Gekündigt',
   },
 };
 
-const HEADERS = ['Dienst', 'Kategorie', 'Kosten / Mo.', 'Nächste Abbuchung', 'Status', 'Aktionen'];
+const BILLING_LABELS = {
+  monthly: 'Monatlich',
+  quarterly: 'Quartalsweise',
+  yearly: 'Jährlich',
+};
+
+const HEADERS = [
+  'Dienst',
+  'Kategorie',
+  'Kosten / Mo.',
+  'Nächste Abbuchung',
+  'Status',
+  'Aktionen',
+];
 
 export default function SubscriptionTable({ subscriptions, onEdit, onDelete }) {
   const formatBillingDate = (dateString) => {
@@ -41,131 +51,214 @@ export default function SubscriptionTable({ subscriptions, onEdit, onDelete }) {
     });
   };
 
+  const renderEmptyState = () => (
+    <div className="empty-state-card">
+      <p className="text-sm font-medium text-[var(--text-2)]">
+        Keine Abonnements gefunden.
+      </p>
+      <p className="mt-2 text-sm leading-6 text-[var(--text-3)]">
+        Passe Suchbegriff oder Statusfilter an, um wieder Treffer zu sehen.
+      </p>
+    </div>
+  );
+
+  if (subscriptions.length === 0) {
+    return renderEmptyState();
+  }
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[920px] text-sm" aria-label="Abonnement-Tabelle">
-        <caption className="sr-only">Abonnements</caption>
-        <thead>
-          <tr style={{ borderBottom: '1px solid var(--border)' }}>
-            {HEADERS.map((header) => (
-              <th
-                key={header}
-                scope="col"
-                className="px-4 py-4 text-left text-xs font-semibold uppercase tracking-widest text-[var(--text-3)]"
-              >
-                {header}
-              </th>
-            ))}
-          </tr>
-        </thead>
+    <div className="flex flex-col gap-4">
+      <div className="grid gap-3 lg:hidden">
+        {subscriptions.map((sub) => {
+          const category = CATEGORIES[sub.category] ?? CATEGORIES.Other;
+          const status = STATUS_STYLES[sub.status] ?? STATUS_STYLES.cancelled;
 
-        <tbody>
-          {subscriptions.length === 0 && (
-            <tr>
-              <td
-                colSpan={6}
-                className="px-4 py-8 text-center text-sm text-[var(--text-3)]"
-              >
-                Keine Abonnements gefunden.
-              </td>
-            </tr>
-          )}
-
-          {subscriptions.map((sub) => {
-            const category = CATEGORIES[sub.category] ?? CATEGORIES.Other;
-            const status = STATUS_STYLES[sub.status] ?? STATUS_STYLES.cancelled;
-
-            return (
-              <tr
-                key={sub.id}
-                className="group transition-colors hover:bg-white/[0.02]"
-                style={{ borderBottom: '1px solid var(--border)' }}
-              >
-                <th scope="row" className="px-4 py-4 text-left align-middle font-normal">
-                  <div className="flex items-center gap-4">
-                    <div
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-lg"
-                      style={{
-                        background: category.bg,
-                        border: `1px solid ${category.color}20`,
-                      }}
-                    >
-                      {sub.icon}
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-[var(--text-1)]">
-                        {sub.name}
-                      </p>
-                      <p className="mt-1 text-xs uppercase tracking-widest text-[var(--text-3)]">
-                        {sub.billing}
-                      </p>
-                    </div>
-                  </div>
-                </th>
-
-                <td className="px-4 py-4 align-middle">
-                  <span
-                    className="inline-flex rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-widest"
+          return (
+            <article key={sub.id} className="mobile-subscription-card">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg"
                     style={{
                       background: category.bg,
-                      color: category.color,
+                      border: `1px solid ${category.color}20`,
                     }}
                   >
-                    {sub.category}
-                  </span>
-                </td>
-
-                <td className="px-4 py-4 align-middle text-sm font-semibold tabular-nums text-[var(--text-1)]">
-                  {formatCurrency(sub.cost)}
-                </td>
-
-                <td className="px-4 py-4 align-middle">
-                  <div className="text-sm text-[var(--text-1)]">
-                    {formatBillingDate(sub.nextBilling)}
+                    {sub.icon}
                   </div>
-                  <div className="mt-1 text-xs uppercase tracking-widest text-[var(--text-3)]">
-                    geplant
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-[var(--text-1)]">
+                      {sub.name}
+                    </p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[var(--text-4)]">
+                      {BILLING_LABELS[sub.billing] ?? sub.billing}
+                    </p>
                   </div>
-                </td>
+                </div>
 
-                <td className="px-4 py-4 align-middle">
-                  <span
-                    className="inline-flex rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-widest"
-                    style={{
-                      background: status.bg,
-                      color: status.color,
-                    }}
-                  >
-                    {status.label}
-                  </span>
-                </td>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-[var(--text-1)]">
+                    {formatCurrency(sub.cost)}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--text-3)]">pro Monat</p>
+                </div>
+              </div>
 
-                <td className="px-4 py-4 align-middle">
-                  <div className="flex gap-2 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
-                    <button
-                      type="button"
-                      onClick={() => onEdit(sub)}
-                      className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-xs font-semibold text-[var(--text-2)] transition-colors hover:text-[var(--text-1)]"
-                      aria-label={`Bearbeiten: ${sub.name}`}
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span
+                  className="category-badge"
+                  style={{ background: category.bg, color: category.color }}
+                >
+                  {sub.category}
+                </span>
+                <span className={status.className}>{status.label}</span>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <InfoTile label="Nächste Abbuchung" value={formatBillingDate(sub.nextBilling)} />
+                <InfoTile
+                  label="Abrechnung"
+                  value={BILLING_LABELS[sub.billing] ?? sub.billing}
+                />
+              </div>
+
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => onEdit(sub)}
+                  className="table-action flex-1"
+                  aria-label={`Bearbeiten: ${sub.name}`}
+                >
+                  Bearbeiten
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(sub.id)}
+                  className="table-action table-action--danger flex-1"
+                  aria-label={`Löschen: ${sub.name}`}
+                >
+                  Löschen
+                </button>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      <div className="hidden overflow-x-auto lg:block">
+        <table className="w-full min-w-[920px] text-sm" aria-label="Abonnement-Tabelle">
+          <caption className="sr-only">Abonnements</caption>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--border)' }}>
+              {HEADERS.map((header) => (
+                <th
+                  key={header}
+                  scope="col"
+                  className="px-4 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-4)]"
+                >
+                  {header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {subscriptions.map((sub) => {
+              const category = CATEGORIES[sub.category] ?? CATEGORIES.Other;
+              const status = STATUS_STYLES[sub.status] ?? STATUS_STYLES.cancelled;
+
+              return (
+                <tr
+                  key={sub.id}
+                  className="transition-colors hover:bg-white/[0.02]"
+                  style={{ borderBottom: '1px solid var(--border)' }}
+                >
+                  <th scope="row" className="px-4 py-4 text-left align-middle font-normal">
+                    <div className="flex items-center gap-4">
+                      <div
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg"
+                        style={{
+                          background: category.bg,
+                          border: `1px solid ${category.color}20`,
+                        }}
+                      >
+                        {sub.icon}
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-[var(--text-1)]">
+                          {sub.name}
+                        </p>
+                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[var(--text-4)]">
+                          {BILLING_LABELS[sub.billing] ?? sub.billing}
+                        </p>
+                      </div>
+                    </div>
+                  </th>
+
+                  <td className="px-4 py-4 align-middle">
+                    <span
+                      className="category-badge"
+                      style={{ background: category.bg, color: category.color }}
                     >
-                      Bearbeiten
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDelete(sub.id)}
-                      className="rounded-xl border border-[rgba(251,113,133,0.22)] bg-[rgba(251,113,133,0.10)] px-3 py-2 text-xs font-semibold text-[var(--danger)] transition-colors hover:bg-[rgba(251,113,133,0.16)]"
-                      aria-label={`Löschen: ${sub.name}`}
-                    >
-                      Löschen
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                      {sub.category}
+                    </span>
+                  </td>
+
+                  <td className="px-4 py-4 align-middle text-sm font-semibold tabular-nums text-[var(--text-1)]">
+                    {formatCurrency(sub.cost)}
+                  </td>
+
+                  <td className="px-4 py-4 align-middle">
+                    <div className="text-sm text-[var(--text-1)]">
+                      {formatBillingDate(sub.nextBilling)}
+                    </div>
+                    <div className="mt-1 text-xs uppercase tracking-[0.18em] text-[var(--text-4)]">
+                      geplant
+                    </div>
+                  </td>
+
+                  <td className="px-4 py-4 align-middle">
+                    <span className={status.className}>{status.label}</span>
+                  </td>
+
+                  <td className="px-4 py-4 align-middle">
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onEdit(sub)}
+                        className="table-action"
+                        aria-label={`Bearbeiten: ${sub.name}`}
+                      >
+                        Bearbeiten
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDelete(sub.id)}
+                        className="table-action table-action--danger"
+                        aria-label={`Löschen: ${sub.name}`}
+                      >
+                        Löschen
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function InfoTile({ label, value }) {
+  return (
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-4)]">
+        {label}
+      </p>
+      <p className="mt-2 text-sm font-semibold text-[var(--text-1)]">{value}</p>
     </div>
   );
 }

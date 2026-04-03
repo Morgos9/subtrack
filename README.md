@@ -1,111 +1,285 @@
 # SubTrack
 
-A clean, finance-style subscription management dashboard built with React and Vite.
+SubTrack is a polished subscription intelligence dashboard built with React and Vite. It helps users understand recurring costs, upcoming renewals, portfolio composition, and savings opportunities in a fast, visual, finance-style interface.
 
-![SubTrack Dashboard](screenshot_v3.png)
+It is intentionally frontend-only: no backend, no sign-in, no external API dependency at runtime. The repository is a strong starting point for building a production-ready subscription tracker, cost cockpit, or personal finance SaaS prototype.
 
-## Features
+## Screenshots
 
-- **Dashboard overview** — monthly spend summary, category breakdown donut chart, spend trend line chart, and upcoming bills
-- **Subscription management** — add, edit, delete, and pause subscriptions in a sortable/filterable table
-- **Price lookup** — smart search with 40+ pre-filled services (EUR prices, German market) and fuzzy matching
-- **Analytics page** — bar chart with monthly history and per-category cost breakdown
-- **Settings page** — currency, notification, and display preferences
-- **Fully client-side** — no backend, no account required, data stored in memory
+### Dashboard
+
+![SubTrack dashboard overview](docs/screenshots/dashboard-desktop.png)
+
+### Subscription Management
+
+![SubTrack subscriptions view](docs/screenshots/subscriptions-desktop.png)
+
+### Analytics
+
+![SubTrack analytics view](docs/screenshots/analytics-desktop.png)
+
+### Responsive Mobile Views
+
+<p>
+  <img src="docs/screenshots/dashboard-mobile.png" alt="SubTrack mobile dashboard" width="32%" />
+  <img src="docs/screenshots/subscriptions-mobile.png" alt="SubTrack mobile subscriptions" width="32%" />
+  <img src="docs/screenshots/settings-mobile.png" alt="SubTrack mobile settings" width="32%" />
+</p>
+
+## What The Project Includes
+
+- A high-contrast dashboard with monthly spend, renewals, trend analysis, and portfolio highlights
+- A responsive subscription management view with search, status filters, quick actions, and mobile cards
+- Custom SVG charts for spend history and category breakdown without adding a chart library
+- A structured add/edit modal with plan lookup, live preview, and consistent monthly-value handling
+- Multiple visual presets with persistent theme selection via `localStorage`
+- Hash-based deep links for core screens: `#dashboard`, `#subscriptions`, `#analytics`, and `#settings`
+- A curated demo dataset with category colors, icons, billing dates, and German-market example pricing
+
+## Why SubTrack
+
+Many subscription dashboards stop at showing a table of services. SubTrack pushes further by focusing on:
+
+- Information hierarchy: the most important cost and renewal signals are visible immediately
+- Decision support: paused subscriptions, top categories, and renewal pressure are surfaced as actionable insights
+- Responsive usability: the same product remains usable on narrow mobile viewports without falling apart
+- Design quality: the UI aims for product-level polish rather than a default admin-template look
 
 ## Tech Stack
 
-| Layer | Library / Tool |
-|---|---|
-| UI framework | React 19 |
-| Build tool | Vite 8 |
-| Styling | Tailwind CSS 4 |
-| Charts | Pure SVG (no chart library) |
+| Layer | Tooling |
+| --- | --- |
+| UI | React 19 |
+| Build tooling | Vite 8 |
+| Styling | Tailwind CSS 4 plus custom CSS tokens/components |
+| Charts | Hand-built SVG components |
 | Linting | ESLint 9 |
+
+## Feature Overview
+
+### 1. Dashboard
+
+The dashboard is the main decision surface. It combines:
+
+- live monthly run rate
+- 30-day renewal load
+- category concentration
+- year-to-date cost context
+- spend trend over time
+- direct navigation into management workflows
+
+### 2. Subscription Management
+
+The subscriptions area supports:
+
+- searching by service name
+- filtering by active, paused, and cancelled status
+- editing and deleting entries
+- optimized mobile cards for smaller screens
+- clear category and status badges
+
+### 3. Analytics
+
+The analytics page provides:
+
+- a selectable time window for spend history
+- trend vs. previous month
+- peak period visibility
+- category composition
+- renewal pressure context
+
+### 4. Settings
+
+Settings currently focus on visual customization:
+
+- multiple curated color presets
+- persistent theme selection
+- live workspace-style preview
+
+### 5. Price Lookup
+
+The subscription modal includes a lookup helper based on a curated service database. It is intended to speed up data entry by suggesting common services and plan prices and normalizing them to monthly equivalents for consistent analytics.
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js >= 18
-- npm >= 9
+- Node.js 18 or newer
+- npm 9 or newer
 
 ### Installation
 
 ```bash
-# Repository klonen
 git clone https://github.com/Morgos9/subtrack.git
 cd subtrack/app
-
-# Abhängigkeiten installieren
 npm install
+```
 
-# Entwicklungsserver starten
+### Run The Development Server
+
+```bash
 npm run dev
 ```
 
-The app runs at `http://localhost:5173`.
+By default, Vite starts the app on:
 
-### Build for production
+```text
+http://localhost:5173
+```
+
+### Build For Production
 
 ```bash
 npm run build
-# Output lands in dist/
 ```
 
-Preview the production build locally:
+### Preview The Production Build
 
 ```bash
 npm run preview
 ```
 
-## Project Structure
+### Lint The Project
 
+```bash
+npm run lint
 ```
+
+## Repository Structure
+
+```text
 app/
-├── public/             # Static assets (favicon, icons, logo)
+├── docs/
+│   └── screenshots/            # README screenshots and public repo assets
+├── public/
+│   ├── favicon.svg
+│   └── icons.svg
 ├── src/
-│   ├── assets/         # Images used in components
+│   ├── assets/
+│   │   ├── hero.png
+│   │   ├── logo.png
+│   │   ├── react.svg
+│   │   └── vite.svg
 │   ├── components/
-│   │   ├── DonutChart.jsx       # Category breakdown (SVG)
-│   │   ├── LineChart.jsx        # Monthly spend trend (SVG)
-│   │   ├── BarChart.jsx         # Analytics bar chart (SVG)
+│   │   ├── BarChart.jsx
+│   │   ├── DonutChart.jsx
+│   │   ├── LineChart.jsx
+│   │   ├── SubscriptionModal.jsx
 │   │   ├── SubscriptionTable.jsx
-│   │   ├── SubscriptionModal.jsx  # Add / edit dialog
-│   │   ├── UpcomingBills.jsx
-│   │   └── TipsPanel.jsx
+│   │   ├── TipsPanel.jsx
+│   │   └── UpcomingBills.jsx
 │   ├── data/
-│   │   ├── subscriptions.js     # Sample data & category config
-│   │   └── priceLookup.js       # Curated price DB (40+ services)
+│   │   └── subscriptions.js    # seed data and category tokens
 │   ├── utils/
-│   │   └── date.js              # Date formatting helpers
-│   └── App.jsx                  # Root component & routing logic
+│   │   ├── date.js             # local date helpers
+│   │   └── priceLookup.js      # curated service lookup database
+│   ├── App.css
+│   ├── App.jsx                 # page orchestration and app shell
+│   ├── index.css               # tokens, component classes, responsive styles
+│   └── main.jsx
 ├── index.html
+├── package.json
 ├── vite.config.js
-└── package.json
+└── README.md
 ```
 
-## Data & Privacy
+## Architecture Notes
 
-All data lives entirely in the browser (React state). Nothing is sent to any server. Refreshing the page resets the data to the bundled sample dataset — persistent storage is a planned feature.
+### Application Model
 
-## Roadmap
+SubTrack is a single-page React application with view switching handled in component state. The active section is synchronized to the URL hash so each major area can be linked directly.
 
-- [ ] LocalStorage persistence
-- [ ] CSV import / export
-- [ ] Annual billing cycle support
-- [ ] Dark mode toggle
-- [ ] Notifications for upcoming renewals
+### State Management
+
+The project currently uses local React state only:
+
+- subscriptions live in memory
+- theme selection is stored in `localStorage`
+- no backend persistence is implemented yet
+
+This keeps the repository easy to clone, run, and extend without infrastructure.
+
+### Charts
+
+Charts are implemented as composable SVG components. This keeps bundle size lean and makes it easier to fine-tune the visual language without a third-party charting abstraction.
+
+### Date Handling
+
+The app intentionally uses local-date helpers for `YYYY-MM-DD` values to avoid UTC parsing surprises in browsers.
+
+## Customization Guide
+
+### Seed Data
+
+Edit `src/data/subscriptions.js` to:
+
+- change the demo portfolio
+- update category labels/colors
+- adjust monthly history points
+
+### Theme Tokens
+
+Edit `src/index.css` to adjust:
+
+- base backgrounds
+- surface and border colors
+- accent colors
+- typography and panel styles
+
+### Lookup Database
+
+Edit `src/utils/priceLookup.js` to:
+
+- add more services
+- update plan names
+- adapt pricing to another market
+
+## Current Limitations
+
+This repository is intentionally focused on frontend product quality and fast local iteration. At the moment it does not include:
+
+- persistent storage for user-created subscriptions
+- authentication or multi-user support
+- server-side data syncing
+- automated tests
+- import/export flows
+
+## Roadmap Ideas
+
+The project is a good foundation for extending toward a full product. Strong next steps would be:
+
+- `localStorage` or database-backed persistence
+- recurring renewal notifications
+- CSV import/export
+- usage-based or annual billing support
+- sortable columns and richer analytics
+- backend sync and user accounts
+
+## Accessibility And UX Notes
+
+The UI improvements in this version focus on:
+
+- better mobile navigation
+- larger tap targets for key actions
+- clearer panel hierarchy
+- stronger contrast in actionable controls
+- responsive subscription management without horizontal scrolling on mobile
 
 ## Contributing
 
-Pull requests are welcome. For larger changes, please open an issue first to discuss what you'd like to change.
+Contributions are welcome.
+
+Recommended workflow:
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Commit your changes
-4. Push to your branch and open a pull request
+2. Create a feature branch
+3. Make your changes
+4. Run `npm run lint`
+5. Run `npm run build`
+6. Open a pull request
+
+If you plan a larger feature, opening an issue first is appreciated.
 
 ## License
 
-[MIT](LICENSE)
+This project is licensed under the [MIT License](LICENSE).
