@@ -6,13 +6,13 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { initialSubscriptions, monthlyHistory } from './data/subscriptions';
 import DonutChart from './components/DonutChart';
 import LineChart from './components/LineChart';
 import UpcomingBills from './components/UpcomingBills';
 import SubscriptionTable from './components/SubscriptionTable';
 import SubscriptionModal from './components/SubscriptionModal';
 import TipsPanel from './components/TipsPanel';
+import UserWorkspacePanel from './components/UserWorkspacePanel';
 import logoUrl from './assets/logo.png';
 import {
   addDays,
@@ -20,6 +20,7 @@ import {
   parseISODateLocal,
   startOfDay,
 } from './utils/date';
+import { createUserRecord, loadWorkspace, persistWorkspace } from './utils/workspaceStore';
 
 const currencyFormatter = new Intl.NumberFormat('de-DE', {
   style: 'currency',
@@ -246,6 +247,9 @@ const PAGE_META = {
   },
 };
 
+const EMPTY_SUBSCRIPTIONS = [];
+const EMPTY_HISTORY = [];
+
 function resolvePageFromHash() {
   if (typeof window === 'undefined') return 'dashboard';
 
@@ -254,14 +258,22 @@ function resolvePageFromHash() {
 }
 
 export default function App() {
-  const [subs, setSubs] = useState(initialSubscriptions);
+  const [workspace, setWorkspace] = useState(() => loadWorkspace());
   const [page, setPage] = useState(() => resolvePageFromHash());
   const [modal, setModal] = useState(null);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
-  const [theme, setTheme] = useState(() => localStorage.getItem('subtrack-theme') ?? 'forest');
   const [chartRange, setChartRange] = useState('6m');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [newUserName, setNewUserName] = useState('');
+
+  const activeUser = useMemo(
+    () => workspace.users.find((user) => user.id === workspace.activeUserId) ?? workspace.users[0],
+    [workspace],
+  );
+  const subs = activeUser?.subscriptions ?? EMPTY_SUBSCRIPTIONS;
+  const userHistory = activeUser?.monthlyHistory ?? EMPTY_HISTORY;
+  const theme = activeUser?.theme ?? THEMES[0].id;
 
   const deferredSearch = useDeferredValue(search);
   const today = useMemo(() => startOfDay(new Date()), []);
@@ -270,8 +282,11 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    localStorage.setItem('subtrack-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    persistWorkspace(workspace);
+  }, [workspace]);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -316,9 +331,9 @@ export default function App() {
   const visibleHistory = useMemo(() => {
     const selectedRange = CHART_RANGES.find((option) => option.key === chartRange) ?? CHART_RANGES[1];
     return Number.isFinite(selectedRange.size)
-      ? monthlyHistory.slice(-selectedRange.size)
-      : monthlyHistory;
-  }, [chartRange]);
+      ? userHistory.slice(-selectedRange.size)
+      : userHistory;
+  }, [chartRange, userHistory]);
 
   const monthlyTrend = useMemo(() => {
     const latest = visibleHistory[visibleHistory.length - 1];
@@ -435,6 +450,15 @@ export default function App() {
     startTransition(() => setModal(sub));
   }, []);
 
+  const updateActiveUser = useCallback((updater) => {
+    setWorkspace((current) => ({
+      ...current,
+      users: current.users.map((user) => (
+        user.id === current.activeUserId ? updater(user) : user
+      )),
+    }));
+  }, []);
+
   const handlePageChange = useCallback((nextPage) => {
     startTransition(() => {
       setPage(nextPage);
@@ -442,28 +466,115 @@ export default function App() {
     });
   }, []);
 
+  const handleThemeChange = useCallback((nextTheme) => {
+    updateActiveUser((user) => ({
+      ...user,
+      theme: nextTheme,
+    }));
+  }, [updateActiveUser]);
+
+  const handleCreateUser = useCallback((event) => {
+    event.preventDefault();
+
+    const name = newUserName.trim();
+    if (!name) return;
+
+    const nextUser = createUserRecord({
+      name,
+      theme,
+      subscriptions: [],
+      history: [],
+    });
+
+    startTransition(() => {
+      setWorkspace((current) => ({
+        ...current,
+        activeUserId: nextUser.id,
+        users: [...current.users, nextUser],
+      }));
+      setNewUserName('');
+      setFilter('all');
+      setSearch('');
+      setChartRange('6m');
+      setModal(null);
+      setPage('settings');
+    });
+  }, [newUserName, theme]);
+
+  const handleSelectUser = useCallback((userId) => {
+    if (userId === activeUser.id) return;
+
+    startTransition(() => {
+      setWorkspace((current) => ({
+        ...current,
+        activeUserId: userId,
+      }));
+      setFilter('all');
+      setSearch('');
+      setChartRange('6m');
+      setModal(null);
+    });
+  }, [activeUser.id]);
+
+  const handleDeleteUser = useCallback((userId) => {
+    const user = workspace.users.find((entry) => entry.id === userId);
+    if (!user) return;
+
+    if (workspace.users.length === 1) {
+      window.alert('Mindestens ein Nutzer muss erhalten bleiben.');
+      return;
+    }
+
+    if (!window.confirm(`Nutzer wirklich loeschen: ${user.name}?`)) return;
+
+    startTransition(() => {
+      setWorkspace((current) => {
+        const nextUsers = current.users.filter((entry) => entry.id !== userId);
+        return {
+          ...current,
+          activeUserId:
+            current.activeUserId === userId
+              ? nextUsers[0]?.id ?? current.activeUserId
+              : current.activeUserId,
+          users: nextUsers,
+        };
+      });
+      setFilter('all');
+      setSearch('');
+      setChartRange('6m');
+      setModal(null);
+    });
+  }, [workspace.users]);
+
   const handleSave = useCallback((sub) => {
-    setSubs((prev) => {
-      const exists = prev.some((entry) => entry.id === sub.id);
-      return exists
-        ? prev.map((entry) => (entry.id === sub.id ? sub : entry))
-        : [...prev, sub];
+    updateActiveUser((user) => {
+      const exists = user.subscriptions.some((entry) => entry.id === sub.id);
+      return {
+        ...user,
+        subscriptions: exists
+          ? user.subscriptions.map((entry) => (entry.id === sub.id ? sub : entry))
+          : [...user.subscriptions, sub],
+      };
     });
     setModal(null);
-  }, []);
+  }, [updateActiveUser]);
 
   const handleDelete = useCallback((id) => {
     const sub = subs.find((entry) => entry.id === id);
     if (!window.confirm(`Abo wirklich löschen${sub ? `: ${sub.name}` : ''}?`)) return;
-    setSubs((prev) => prev.filter((entry) => entry.id !== id));
-  }, [subs]);
+
+    updateActiveUser((user) => ({
+      ...user,
+      subscriptions: user.subscriptions.filter((entry) => entry.id !== id),
+    }));
+  }, [subs, updateActiveUser]);
 
   return (
     <div className="min-h-screen text-[color:var(--text-1)]">
       <div
         className={`mobile-nav-backdrop ${mobileNavOpen ? 'is-open' : ''}`}
         onClick={() => setMobileNavOpen(false)}
-        aria-hidden={mobileNavOpen ? 'false' : 'true'}
+        aria-hidden={!mobileNavOpen}
       />
 
       <div className="mx-auto flex min-h-screen w-full max-w-[1680px]">
@@ -499,7 +610,7 @@ export default function App() {
             </div>
 
             <nav className="flex-1 px-3 py-4" aria-label="Hauptnavigation">
-              <div className="flex gap-2 overflow-x-auto lg:flex-col">
+              <div className="flex flex-col gap-1">
                 {NAV_ITEMS.map((item) => {
                   const isActive = page === item.id;
                   return (
@@ -526,7 +637,7 @@ export default function App() {
                   {formatCurrency(monthlyTotal)}
                 </p>
                 <p className="mt-3 text-sm text-[var(--text-3)]">
-                  {active.length} aktive Services · {themeMeta.label}
+                  {active.length} aktive Services · {activeUser.name}
                 </p>
               </div>
             </div>
@@ -600,10 +711,11 @@ export default function App() {
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="section-title mb-0">{pageMeta.eyebrow}</p>
                       <span className="dashboard-pill hidden sm:inline-flex">{themeMeta.label}</span>
+                      <span className="dashboard-pill hidden md:inline-flex">{activeUser.name}</span>
                     </div>
                   </div>
 
-                  <h1 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-[var(--text-1)] sm:text-4xl">
+                  <h1 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-[var(--text-1)] sm:text-3xl lg:text-4xl">
                     {pageLabel}
                   </h1>
                   <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--text-3)]">
@@ -634,6 +746,7 @@ export default function App() {
                 </p>
 
                 <div className="flex flex-wrap items-center gap-3">
+                  <span className="dashboard-pill">Nutzer: {activeUser.name}</span>
                   {page === 'dashboard' && (
                     <span className="dashboard-pill dashboard-pill--accent">
                       {formatCurrency(monthlyTotal)} / Monat
@@ -670,7 +783,7 @@ export default function App() {
                     }}
                   />
 
-                  <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)]">
+                  <div className="relative grid gap-6 md:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)]">
                     <div className="flex flex-col gap-6">
                       <div className="flex flex-wrap items-center gap-3">
                         <span className="dashboard-pill dashboard-pill--accent">Live Portfolio</span>
@@ -680,7 +793,7 @@ export default function App() {
 
                       <div>
                         <p className="section-title">Spending cockpit</p>
-                        <h2 className="max-w-3xl text-3xl font-semibold tracking-[-0.06em] text-[var(--text-1)] sm:text-[2.8rem]">
+                        <h2 className="max-w-3xl text-2xl font-semibold tracking-[-0.06em] text-[var(--text-1)] sm:text-3xl xl:text-[2.8rem]">
                           Subscription intelligence mit klarem Fokus statt bloßer Zahlenwand.
                         </h2>
                         <p className="mt-4 max-w-2xl text-sm leading-7 text-[var(--text-2)]">
@@ -689,7 +802,7 @@ export default function App() {
                         </p>
                       </div>
 
-                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <HeroStat
                           label="Monatliche Runrate"
                           value={formatCurrency(monthlyTotal)}
@@ -915,7 +1028,7 @@ export default function App() {
                   />
                 </div>
 
-                <div className="grid gap-6 xl:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                   <div className="panel-card panel-card--interactive flex min-h-[320px] flex-col p-6">
                     <DonutChart subscriptions={subs} />
                   </div>
@@ -1123,7 +1236,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="grid gap-6 xl:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                   <div className="panel-card panel-card--interactive flex min-h-[320px] flex-col p-6">
                     <DonutChart subscriptions={subs} />
                   </div>
@@ -1143,14 +1256,24 @@ export default function App() {
                   <div className="panel-card p-6">
                     <p className="section-title">Workspace-Konfiguration</p>
                     <h2 className="text-2xl font-semibold tracking-[-0.05em] text-[var(--text-1)]">
-                      Visuelle Sprache mit Produktgefühl statt Theme-Switch.
+                      Nutzer und Design bleiben jetzt lokal gespeichert.
                     </h2>
                     <p className="mt-4 text-sm leading-7 text-[var(--text-3)]">
-                      Jedes Preset ist als vollständige Oberfläche gedacht: Kontrast, Tiefe,
-                      Akzentfarbe und Panel-Stimmung verändern sich zusammen und bleiben lokal
-                      gespeichert.
+                      Jeder Workspace verwaltet eigene Abos, Theme-Einstellungen und Verlaufsdaten.
+                      So kannst du zwischen Personen oder Kontexten wechseln, ohne Daten zu
+                      vermischen.
                     </p>
                   </div>
+
+                  <UserWorkspacePanel
+                    users={workspace.users}
+                    activeUserId={activeUser.id}
+                    newUserName={newUserName}
+                    onNewUserNameChange={setNewUserName}
+                    onCreateUser={handleCreateUser}
+                    onSelectUser={handleSelectUser}
+                    onDeleteUser={handleDeleteUser}
+                  />
 
                   <div className="panel-card p-6">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -1160,8 +1283,8 @@ export default function App() {
                           Design-Preset
                         </h3>
                         <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-3)]">
-                          Wähle das Set, das zu deinem Arbeitsmodus passt. Die Auswahl wird direkt im
-                          Browser gespeichert.
+                          Wähle das Set, das zu {activeUser.name} passt. Die Auswahl wird pro Nutzer
+                          direkt im Browser gespeichert.
                         </p>
                       </div>
                       <span className="dashboard-pill">{themeMeta.label} aktiv</span>
@@ -1175,7 +1298,7 @@ export default function App() {
                           <button
                             key={t.id}
                             type="button"
-                            onClick={() => setTheme(t.id)}
+                            onClick={() => handleThemeChange(t.id)}
                             className="theme-swatch-card"
                             aria-pressed={isActive}
                             style={{
@@ -1243,9 +1366,10 @@ export default function App() {
                     <div className="flex items-center gap-2">
                       <span className="dashboard-pill dashboard-pill--accent">Live Preview</span>
                       <span className="dashboard-pill">{themeMeta.label}</span>
+                      <span className="dashboard-pill">{activeUser.name}</span>
                     </div>
                     <h3 className="mt-4 text-2xl font-semibold tracking-[-0.05em] text-[var(--text-1)]">
-                      {themeMeta.label} fühlt sich gerade aktiv an.
+                      {themeMeta.label} ist fuer {activeUser.name} aktiv.
                     </h3>
                     <p className="mt-3 text-sm leading-7 text-[var(--text-2)]">{themeMeta.description}</p>
 

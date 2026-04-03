@@ -32,6 +32,17 @@ export default function LineChart({
   const plotH = H - CHART_PAD.top - CHART_PAD.bottom;
 
   const chartState = useMemo(() => {
+    if (data.length === 0) {
+      return {
+        average: 0,
+        max: 1,
+        min: 0,
+        peak: null,
+        points: [],
+        trend: 0,
+      };
+    }
+
     const values = data.map((entry) => entry.amount);
     const rawMin = Math.min(...values);
     const rawMax = Math.max(...values);
@@ -71,6 +82,7 @@ export default function LineChart({
   }, [data, plotH, plotW]);
 
   const { average, max, min, peak, points, trend } = chartState;
+  const hasData = points.length > 0;
   const activePoint = hoveredIndex === null ? null : points[hoveredIndex];
   const currentValue = data[data.length - 1]?.amount ?? 0;
   const periodLabel = data.length
@@ -79,11 +91,15 @@ export default function LineChart({
       : `${data[0].month} bis ${data[data.length - 1].month}`
     : 'Keine Daten';
 
-  const linePath = points
-    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
-    .join(' ');
+  const linePath = hasData
+    ? points
+        .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+        .join(' ')
+    : '';
 
-  const areaPath = `${linePath} L ${CHART_PAD.left + plotW} ${CHART_PAD.top + plotH} L ${CHART_PAD.left} ${CHART_PAD.top + plotH} Z`;
+  const areaPath = hasData
+    ? `${linePath} L ${CHART_PAD.left + plotW} ${CHART_PAD.top + plotH} L ${CHART_PAD.left} ${CHART_PAD.top + plotH} Z`
+    : '';
 
   const yLabels = useMemo(() => {
     return Array.from({ length: 4 }, (_, index) => {
@@ -98,7 +114,7 @@ export default function LineChart({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <p className="section-title">Monatsausgaben</p>
           <div className="flex flex-wrap items-end gap-3">
@@ -139,129 +155,135 @@ export default function LineChart({
         )}
       </div>
 
-      <svg
-        className="mt-6 h-[220px] w-full"
-        viewBox={`0 0 ${W} ${H}`}
-        preserveAspectRatio="none"
-        role="img"
-        aria-label="Monatliche Ausgaben als Liniendiagramm"
-        onMouseLeave={() => setHoveredIndex(null)}
-      >
-        <defs>
-          <linearGradient id="line-chart-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.36" />
-            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="line-chart-stroke" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="var(--accent-dim)" />
-            <stop offset="100%" stopColor="var(--accent)" />
-          </linearGradient>
-        </defs>
+      {hasData ? (
+        <svg
+          className="mt-6 h-[220px] w-full"
+          viewBox={`0 0 ${W} ${H}`}
+          preserveAspectRatio="none"
+          role="img"
+          aria-label="Monatliche Ausgaben als Liniendiagramm"
+          onMouseLeave={() => setHoveredIndex(null)}
+        >
+          <defs>
+            <linearGradient id="line-chart-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.36" />
+              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="line-chart-stroke" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="var(--accent-dim)" />
+              <stop offset="100%" stopColor="var(--accent)" />
+            </linearGradient>
+          </defs>
 
-        {yLabels.map((label, index) => (
-          <g key={`${label.label}-${index}`}>
-            <line
-              className="chart-grid-line"
-              x1={CHART_PAD.left}
-              y1={label.y}
-              x2={CHART_PAD.left + plotW}
-              y2={label.y}
-            />
-            <text
-              x={CHART_PAD.left - 10}
-              y={label.y + 4}
-              textAnchor="end"
-              className="chart-label"
-            >
-              {label.label}
-            </text>
-          </g>
-        ))}
+          {yLabels.map((label, index) => (
+            <g key={`${label.label}-${index}`}>
+              <line
+                className="chart-grid-line"
+                x1={CHART_PAD.left}
+                y1={label.y}
+                x2={CHART_PAD.left + plotW}
+                y2={label.y}
+              />
+              <text
+                x={CHART_PAD.left - 10}
+                y={label.y + 4}
+                textAnchor="end"
+                className="chart-label"
+              >
+                {label.label}
+              </text>
+            </g>
+          ))}
 
-        <path className="chart-area-fill" d={areaPath} fill="url(#line-chart-fill)" />
+          <path className="chart-area-fill" d={areaPath} fill="url(#line-chart-fill)" />
 
-        <path
-          d={linePath}
-          fill="none"
-          stroke="url(#line-chart-stroke)"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="chart-area-line"
-        />
+          <path
+            d={linePath}
+            fill="none"
+            stroke="url(#line-chart-stroke)"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="chart-area-line"
+          />
 
-        {points.map((point, index) => (
-          <g key={point.month} onMouseEnter={() => setHoveredIndex(index)}>
-            <rect
-              x={point.x - plotW / Math.max(points.length, 1) / 2}
-              y={CHART_PAD.top}
-              width={plotW / Math.max(points.length, 1)}
-              height={plotH}
-              fill="transparent"
-            />
-            <circle
-              cx={point.x}
-              cy={point.y}
-              r={hoveredIndex === index ? 5.5 : 4}
-              fill={hoveredIndex === index ? 'var(--accent)' : 'rgba(15, 20, 17, 0.92)'}
-              stroke="var(--accent)"
-              strokeWidth="2"
-              style={{ transition: 'r 160ms ease' }}
-            />
-            <text
-              x={point.x}
-              y={H - 8}
-              textAnchor="middle"
-              className="chart-label"
-            >
-              {point.month}
-            </text>
-          </g>
-        ))}
+          {points.map((point, index) => (
+            <g key={point.month} onMouseEnter={() => setHoveredIndex(index)}>
+              <rect
+                x={point.x - plotW / Math.max(points.length, 1) / 2}
+                y={CHART_PAD.top}
+                width={plotW / Math.max(points.length, 1)}
+                height={plotH}
+                fill="transparent"
+              />
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r={hoveredIndex === index ? 5.5 : 4}
+                fill={hoveredIndex === index ? 'var(--accent)' : 'rgba(15, 20, 17, 0.92)'}
+                stroke="var(--accent)"
+                strokeWidth="2"
+                style={{ transition: 'r 160ms ease' }}
+              />
+              <text
+                x={point.x}
+                y={H - 8}
+                textAnchor="middle"
+                className="chart-label"
+              >
+                {point.month}
+              </text>
+            </g>
+          ))}
 
-        {activePoint && (
-          <g pointerEvents="none">
-            <line
-              x1={activePoint.x}
-              y1={CHART_PAD.top}
-              x2={activePoint.x}
-              y2={CHART_PAD.top + plotH}
-              stroke="rgba(var(--accent-rgb), 0.45)"
-              strokeWidth="1.5"
-              strokeDasharray="4 6"
-            />
+          {activePoint && (
+            <g pointerEvents="none">
+              <line
+                x1={activePoint.x}
+                y1={CHART_PAD.top}
+                x2={activePoint.x}
+                y2={CHART_PAD.top + plotH}
+                stroke="rgba(var(--accent-rgb), 0.45)"
+                strokeWidth="1.5"
+                strokeDasharray="4 6"
+              />
 
-            <rect
-              x={Math.max(16, Math.min(activePoint.x - 56, W - 128))}
-              y={Math.max(8, activePoint.y - 54)}
-              width="112"
-              height="42"
-              rx="12"
-              fill="rgba(13, 18, 15, 0.96)"
-              stroke="rgba(var(--accent-rgb), 0.16)"
-            />
-            <text
-              x={Math.max(72, Math.min(activePoint.x, W - 72))}
-              y={Math.max(30, activePoint.y - 28)}
-              textAnchor="middle"
-              fill="var(--text-1)"
-              fontSize="12"
-              fontWeight="700"
-            >
-              {formatCurrency(activePoint.amount)}
-            </text>
-            <text
-              x={Math.max(72, Math.min(activePoint.x, W - 72))}
-              y={Math.max(45, activePoint.y - 12)}
-              textAnchor="middle"
-              fill="var(--text-3)"
-              fontSize="11"
-            >
-              {activePoint.month}
-            </text>
-          </g>
-        )}
-      </svg>
+              <rect
+                x={Math.max(16, Math.min(activePoint.x - 56, W - 128))}
+                y={Math.max(8, activePoint.y - 54)}
+                width="112"
+                height="42"
+                rx="12"
+                fill="rgba(13, 18, 15, 0.96)"
+                stroke="rgba(var(--accent-rgb), 0.16)"
+              />
+              <text
+                x={Math.max(72, Math.min(activePoint.x, W - 72))}
+                y={Math.max(30, activePoint.y - 28)}
+                textAnchor="middle"
+                fill="var(--text-1)"
+                fontSize="12"
+                fontWeight="700"
+              >
+                {formatCurrency(activePoint.amount)}
+              </text>
+              <text
+                x={Math.max(72, Math.min(activePoint.x, W - 72))}
+                y={Math.max(45, activePoint.y - 12)}
+                textAnchor="middle"
+                fill="var(--text-3)"
+                fontSize="11"
+              >
+                {activePoint.month}
+              </text>
+            </g>
+          )}
+        </svg>
+      ) : (
+        <div className="mt-6 flex h-[220px] items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-6 py-6 text-center text-sm text-[var(--text-3)]">
+          Noch keine Verlaufsdaten fuer diesen Nutzer vorhanden.
+        </div>
+      )}
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <MetricTile label="Fenster" value={periodLabel} />

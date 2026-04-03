@@ -32,6 +32,7 @@ It is intentionally frontend-only: no backend, no sign-in, no external API depen
 - A responsive subscription management view with search, status filters, quick actions, and mobile cards
 - Custom SVG charts for spend history and category breakdown without adding a chart library
 - A structured add/edit modal with plan lookup, live preview, and consistent monthly-value handling
+- Local user workspaces with separate subscription data, themes, and history persisted in `localStorage`
 - Multiple visual presets with persistent theme selection via `localStorage`
 - Hash-based deep links for core screens: `#dashboard`, `#subscriptions`, `#analytics`, and `#settings`
 - A curated demo dataset with category colors, icons, billing dates, and German-market example pricing
@@ -90,10 +91,11 @@ The analytics page provides:
 
 ### 4. Settings
 
-Settings currently focus on visual customization:
+Settings now focus on workspace and visual customization:
 
+- local browser persistence for multiple users
 - multiple curated color presets
-- persistent theme selection
+- per-user persistent theme selection
 - live workspace-style preview
 
 ### 5. Price Lookup
@@ -238,8 +240,7 @@ Edit `src/utils/priceLookup.js` to:
 
 This repository is intentionally focused on frontend product quality and fast local iteration. At the moment it does not include:
 
-- persistent storage for user-created subscriptions
-- authentication or multi-user support
+- authenticated multi-user support across devices
 - server-side data syncing
 - automated tests
 - import/export flows
@@ -248,7 +249,6 @@ This repository is intentionally focused on frontend product quality and fast lo
 
 The project is a good foundation for extending toward a full product. Strong next steps would be:
 
-- `localStorage` or database-backed persistence
 - recurring renewal notifications
 - CSV import/export
 - usage-based or annual billing support
