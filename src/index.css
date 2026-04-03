@@ -1,19 +1,34 @@
 @import "tailwindcss";
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+:root {
+  --bg:        #0d1410;
+  --surface:   #141e18;
+  --surface-2: #1a2a1e;
+  --border:    #243328;
+  --accent:    #a3e635;
+  --accent-dim:#6bbf1c;
+  --accent-glow: rgba(163,230,53,0.12);
+  --text-1:    #f0fff4;
+  --text-2:    #86efac;
+  --text-3:    #4d7a58;
 }
 
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
-  background: #0f1923;
-  color: #e2e8f0;
+  font-family: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text-1);
   -webkit-font-smoothing: antialiased;
 }
 
-#root {
-  min-height: 100vh;
-  display: flex;
-}
+#root { min-height: 100vh; display: flex; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
+/* Chart gradient (referenced via SVG id) */
+.chart-area-line { filter: drop-shadow(0 0 6px rgba(163,230,53,0.4)); }
