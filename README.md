@@ -4,6 +4,8 @@ SubTrack is a polished subscription intelligence dashboard built with React and 
 
 It is intentionally frontend-only: no backend, no sign-in, no external API dependency at runtime. The repository is a strong starting point for building a production-ready subscription tracker, cost cockpit, or personal finance SaaS prototype.
 
+→ **[Roadmap v1.0](ROADMAP.md)** — see what's done, what's in progress, and what's coming next.
+
 ## Screenshots
 
 ### Dashboard
