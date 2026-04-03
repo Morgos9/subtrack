@@ -119,8 +119,8 @@ export default function LineChart({ data }) {
       >
         <defs>
           <linearGradient id="line-chart-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(183, 243, 107, 0.36)" />
-            <stop offset="100%" stopColor="rgba(183, 243, 107, 0)" />
+            <stop offset="0%" stopColor="#b7f36b" stopOpacity="0.36" />
+            <stop offset="100%" stopColor="#b7f36b" stopOpacity="0" />
           </linearGradient>
           <linearGradient id="line-chart-stroke" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#8fd03b" />
@@ -128,8 +128,8 @@ export default function LineChart({ data }) {
           </linearGradient>
         </defs>
 
-        {yLabels.map((label) => (
-          <g key={label.label}>
+        {yLabels.map((label, index) => (
+          <g key={`${label.label}-${index}`}>
             <line
               className="chart-grid-line"
               x1={PAD.left}

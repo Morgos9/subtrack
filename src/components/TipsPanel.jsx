@@ -1,34 +1,79 @@
-// Inspired by the "Rewards" panel in the mockup — adapted as savings tips
 const TIPS = [
-  { id: 1, done: true,  title: 'Jahresabo prüfen',  sub: 'Bis zu 20% günstiger als monatlich' },
-  { id: 2, done: true,  title: 'Familien-Plan nutzen', sub: 'Kosten auf mehrere Personen verteilen' },
-  { id: 3, done: false, title: 'Pausierte Abos kündigen', sub: 'Potenzial: ~8.99€ Ersparnis/Monat' },
+  {
+    id: 1,
+    done: true,
+    title: 'Jahresabo prüfen',
+    sub: 'Bis zu 20% günstiger als monatliche Abrechnung.',
+  },
+  {
+    id: 2,
+    done: true,
+    title: 'Familien-Plan nutzen',
+    sub: 'Kosten auf mehrere Nutzer verteilen und Redundanzen abbauen.',
+  },
+  {
+    id: 3,
+    done: false,
+    title: 'Pausierte Abos kündigen',
+    sub: 'Sofortpotenzial: rund 8,99 € Ersparnis pro Monat.',
+  },
 ];
 
 export default function TipsPanel({ onAddSub }) {
-  return (
-    <div className="flex min-h-[320px] flex-col gap-4 h-full">
-      <p className="text-xs text-[var(--text-3)] uppercase tracking-widest font-medium">Spartipps</p>
+  const completedTips = TIPS.filter((tip) => tip.done).length;
 
-      <div className="flex flex-col gap-3 flex-1">
-        {TIPS.map(tip => (
-          <div key={tip.id} className="flex items-start gap-3 py-1">
-            <div
-              className="w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5"
-              style={{
-                background: tip.done ? 'rgba(163,230,53,0.15)' : 'rgba(255,255,255,0.05)',
-                border: `1.5px solid ${tip.done ? '#a3e635' : '#243328'}`,
-              }}
-            >
-              {tip.done && (
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                  <path d="M2 5l2 2 4-4" stroke="#a3e635" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              )}
-            </div>
-            <div>
-              <p className="text-sm font-medium text-[var(--text-1)] leading-none">{tip.title}</p>
-              <p className="text-xs text-[var(--text-3)] mt-0.5">{tip.sub}</p>
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="section-title">Spartipps</p>
+          <p className="text-sm text-[var(--text-3)]">
+            Kleine Optimierungen mit direkter Auswirkung auf die Runrate.
+          </p>
+        </div>
+        <span className="dashboard-pill dashboard-pill--accent">
+          {completedTips}/{TIPS.length}
+        </span>
+      </div>
+
+      <div className="mt-6 flex flex-1 flex-col gap-3">
+        {TIPS.map((tip) => (
+          <div
+            key={tip.id}
+            className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-4"
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg"
+                style={{
+                  background: tip.done ? 'rgba(183, 243, 107, 0.16)' : 'rgba(255, 255, 255, 0.05)',
+                  border: `1px solid ${tip.done ? 'rgba(183, 243, 107, 0.28)' : 'rgba(255, 255, 255, 0.08)'}`,
+                }}
+              >
+                {tip.done ? (
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path
+                      d="M2.5 6.25 4.9 8.5 9.5 3.75"
+                      stroke="var(--accent)"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                ) : (
+                  <span className="h-2 w-2 rounded-full bg-[var(--text-4)]" />
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-semibold text-[var(--text-1)]">{tip.title}</p>
+                  <span className={`dashboard-pill ${tip.done ? 'dashboard-pill--accent' : ''}`}>
+                    {tip.done ? 'Erledigt' : 'Offen'}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-[var(--text-3)]">{tip.sub}</p>
+              </div>
             </div>
           </div>
         ))}
@@ -37,14 +82,9 @@ export default function TipsPanel({ onAddSub }) {
       <button
         type="button"
         onClick={onAddSub}
-        className="mt-auto w-full py-3 rounded-xl font-semibold text-sm transition-all"
-        style={{
-          background: 'linear-gradient(135deg, #a3e635, #6bbf1c)',
-          color: '#0d1410',
-          boxShadow: '0 0 20px rgba(163,230,53,0.25)',
-        }}
+        className="dashboard-button mt-6 w-full justify-center"
       >
-        + Abo hinzufügen
+        Abo hinzufügen
       </button>
     </div>
   );

@@ -7,6 +7,7 @@ import SubscriptionTable from './components/SubscriptionTable';
 import SubscriptionModal from './components/SubscriptionModal';
 import TipsPanel from './components/TipsPanel';
 import logoUrl from './assets/logo.png';
+import { formatDateDE, parseISODateLocal } from './utils/date';
 
 const currencyFormatter = new Intl.NumberFormat('de-DE', {
   style: 'currency',
@@ -138,7 +139,7 @@ export default function App() {
 
   const upcomingRenewal = useMemo(() => {
     return [...active]
-      .sort((a, b) => new Date(a.nextBilling) - new Date(b.nextBilling))[0] ?? null;
+      .sort((a, b) => parseISODateLocal(a.nextBilling) - parseISODateLocal(b.nextBilling))[0] ?? null;
   }, [active]);
 
   const filtered = useMemo(() => {
@@ -360,7 +361,11 @@ export default function App() {
                         </p>
                         {upcomingRenewal && (
                           <p className="mt-2 text-sm text-[var(--text-3)]">
-                            {upcomingRenewal.nextBilling} / {formatCurrency(upcomingRenewal.cost)}
+                            {formatDateDE(parseISODateLocal(upcomingRenewal.nextBilling), {
+                              day: '2-digit',
+                              month: 'short',
+                            })}{' '}
+                            / {formatCurrency(upcomingRenewal.cost)}
                           </p>
                         )}
                       </div>

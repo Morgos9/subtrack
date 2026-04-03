@@ -1,55 +1,99 @@
-import { addDays, parseISODateLocal, startOfDay } from '../utils/date';
+import { addDays, formatDateDE, parseISODateLocal, startOfDay } from '../utils/date';
 import { CATEGORIES } from '../data/subscriptions';
 
-// Transaction-list style — inspired by the Transactions panel in the mockup
+const currencyFormatter = new Intl.NumberFormat('de-DE', {
+  style: 'currency',
+  currency: 'EUR',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+const formatCurrency = (value) => currencyFormatter.format(value);
+
 export default function UpcomingBills({ subscriptions }) {
   const today = startOfDay(new Date());
-  const in30 = addDays(today, 30);
+  const in30Days = addDays(today, 30);
 
   const upcoming = subscriptions
-    .filter(s => s.status === 'active')
-    .map(s => ({ ...s, date: parseISODateLocal(s.nextBilling) }))
-    .filter(s => s.date && s.date >= today && s.date <= in30)
-    .sort((a, b) => a.date - b.date)
+    .filter((sub) => sub.status === 'active')
+    .map((sub) => ({ ...sub, date: parseISODateLocal(sub.nextBilling) }))
+    .filter((sub) => sub.date && sub.date >= today && sub.date <= in30Days)
+    .sort((left, right) => left.date - right.date)
     .slice(0, 5);
 
   return (
-    <div className="flex min-h-[320px] flex-col gap-4 h-full">
-      <p className="text-xs text-[var(--text-3)] uppercase tracking-widest font-medium">Bevorstehende Zahlungen</p>
+    <div className="flex h-full flex-col">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="section-title">Bevorstehende Zahlungen</p>
+          <p className="text-sm text-[var(--text-3)]">Die nächsten 30 Tage im Blick.</p>
+        </div>
+        <span className="dashboard-pill">{upcoming.length} geplant</span>
+      </div>
 
-      <div className="flex flex-1 flex-col">
+      <div className="mt-6 flex flex-1 flex-col">
         {upcoming.length === 0 && (
-          <p className="flex flex-1 items-center justify-center py-6 text-center text-sm text-[var(--text-3)]">Keine Zahlungen in 30 Tagen.</p>
+          <div className="flex flex-1 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-6 py-6 text-center text-sm text-[var(--text-3)]">
+            Keine anstehenden Abbuchungen in den nächsten 30 Tagen.
+          </div>
         )}
-        {upcoming.map(s => {
-          const catColor = CATEGORIES[s.category]?.color || '#94a3b8';
-          const daysLeft = Math.ceil((s.date - today) / (1000 * 60 * 60 * 24));
-          return (
-            <div
-              key={s.id}
-              className="flex items-center gap-3 border-b border-[var(--border)] py-3 first:pt-0 last:border-0 last:pb-0"
-            >
-              {/* Service avatar */}
-              <div
-                className="w-9 h-9 rounded-full flex items-center justify-center text-base shrink-0 font-medium"
-                style={{ background: `${catColor}20`, border: `1.5px solid ${catColor}40` }}
-              >
-                {s.icon}
-              </div>
 
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[var(--text-1)] leading-none">{s.name}</p>
-                <p className="text-xs text-[var(--text-3)] mt-0.5">
-                  {daysLeft === 0 ? 'Heute' : daysLeft === 1 ? 'Morgen' : `in ${daysLeft} Tagen`}
-                </p>
-              </div>
+        {upcoming.length > 0 && (
+          <div className="flex flex-1 flex-col divide-y divide-[var(--border)] rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4">
+            {upcoming.map((sub) => {
+              const category = CATEGORIES[sub.category] ?? CATEGORIES.Other;
+              const daysLeft = Math.ceil((sub.date - today) / (1000 * 60 * 60 * 24));
+              const relativeLabel = daysLeft === 0
+                ? 'Heute'
+                : daysLeft === 1
+                  ? 'Morgen'
+                  : `In ${daysLeft} Tagen`;
 
-              <span className="text-sm font-bold text-[var(--accent)] tabular-nums whitespace-nowrap">
-                -{s.cost.toFixed(2)}€
-              </span>
-            </div>
-          );
-        })}
+              return (
+                <div key={sub.id} className="flex items-center gap-4 py-4">
+                  <div
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg"
+                    style={{
+                      background: `${category.color}20`,
+                      border: `1px solid ${category.color}30`,
+                    }}
+                  >
+                    {sub.icon}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="truncate text-sm font-semibold text-[var(--text-1)]">
+                        {sub.name}
+                      </p>
+                      <span
+                        className="rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-widest"
+                        style={{
+                          background: `${category.color}16`,
+                          color: category.color,
+                        }}
+                      >
+                        {sub.category}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-[var(--text-3)]">
+                      {relativeLabel} / {formatDateDE(sub.date, { day: '2-digit', month: 'short' })}
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-[var(--text-1)]">
+                      {formatCurrency(sub.cost)}
+                    </p>
+                    <p className="mt-2 text-xs uppercase tracking-widest text-[var(--text-3)]">
+                      {formatDateDE(sub.date, { weekday: 'short' })}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
