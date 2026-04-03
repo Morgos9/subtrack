@@ -119,12 +119,12 @@ export default function LineChart({ data }) {
       >
         <defs>
           <linearGradient id="line-chart-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#b7f36b" stopOpacity="0.36" />
-            <stop offset="100%" stopColor="#b7f36b" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.36" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
           </linearGradient>
           <linearGradient id="line-chart-stroke" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#8fd03b" />
-            <stop offset="100%" stopColor="#d9ff94" />
+            <stop offset="0%" stopColor="var(--accent-dim)" />
+            <stop offset="100%" stopColor="var(--accent)" />
           </linearGradient>
         </defs>
 
@@ -196,7 +196,7 @@ export default function LineChart({ data }) {
               y1={PAD.top}
               x2={activePoint.x}
               y2={PAD.top + plotH}
-              stroke="rgba(183, 243, 107, 0.45)"
+              stroke="rgba(var(--accent-rgb), 0.45)"
               strokeWidth="1.5"
               strokeDasharray="4 6"
             />
@@ -208,7 +208,7 @@ export default function LineChart({ data }) {
               height="42"
               rx="12"
               fill="rgba(13, 18, 15, 0.96)"
-              stroke="rgba(183, 243, 107, 0.16)"
+              stroke="rgba(var(--accent-rgb), 0.16)"
             />
             <text
               x={Math.max(72, Math.min(activePoint.x, W - 72))}

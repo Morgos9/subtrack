@@ -12,7 +12,7 @@ const formatCurrency = (value) => currencyFormatter.format(value);
 
 const STATUS_STYLES = {
   active: {
-    bg: 'rgba(183, 243, 107, 0.14)',
+    bg: 'rgba(var(--accent-rgb), 0.14)',
     color: 'var(--accent)',
     label: 'Aktiv',
   },

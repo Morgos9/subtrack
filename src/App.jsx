@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { initialSubscriptions, monthlyHistory } from './data/subscriptions';
 import DonutChart from './components/DonutChart';
 import LineChart from './components/LineChart';
@@ -30,6 +30,51 @@ const longDateFormatter = new Intl.DateTimeFormat('de-DE', {
 
 const formatCurrency = (value) => currencyFormatter.format(value);
 const formatPercent = (value) => `${value >= 0 ? '+' : ''}${percentFormatter.format(value)}%`;
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `${r}, ${g}, ${b}`;
+}
+
+const THEMES = [
+  {
+    id: 'forest',
+    label: 'Forest',
+    accent: '#b7f36b',
+    bg: '#070b09',
+    description: 'Grüner Wald — klassisch & frisch',
+  },
+  {
+    id: 'ocean',
+    label: 'Ocean',
+    accent: '#38bdf8',
+    bg: '#070a10',
+    description: 'Tiefes Blau — klar & konzentriert',
+  },
+  {
+    id: 'dusk',
+    label: 'Dusk',
+    accent: '#c084fc',
+    bg: '#0c080f',
+    description: 'Violettes Zwielicht — mystisch',
+  },
+  {
+    id: 'ember',
+    label: 'Ember',
+    accent: '#fb923c',
+    bg: '#0f0a06',
+    description: 'Glühendes Orange — warm & energisch',
+  },
+  {
+    id: 'rose',
+    label: 'Rose',
+    accent: '#f472b6',
+    bg: '#0f070a',
+    description: 'Zartes Pink — elegant & weich',
+  },
+];
 
 const Icon = {
   Dashboard: () => (
@@ -108,6 +153,12 @@ export default function App() {
   const [modal, setModal] = useState(null);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [theme, setTheme] = useState(() => localStorage.getItem('subtrack-theme') ?? 'forest');
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('subtrack-theme', theme);
+  }, [theme]);
 
   const active = useMemo(() => subs.filter((sub) => sub.status === 'active'), [subs]);
   const paused = useMemo(() => subs.filter((sub) => sub.status === 'paused'), [subs]);
@@ -247,7 +298,7 @@ export default function App() {
             className="sticky top-0 z-20 border-b"
             style={{
               borderColor: 'var(--border)',
-              background: 'rgba(9, 13, 11, 0.78)',
+              background: 'var(--header-bg)',
               backdropFilter: 'blur(18px)',
             }}
           >
@@ -494,17 +545,87 @@ export default function App() {
             )}
 
             {page === 'settings' && (
-              <div className="max-w-3xl">
+              <div className="flex max-w-3xl flex-col gap-6">
                 <div className="panel-card p-6">
                   <p className="section-title">Einstellungen</p>
                   <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[var(--text-1)]">
                     Workspace-Konfiguration
                   </h2>
                   <p className="mt-4 text-sm leading-6 text-[var(--text-3)]">
-                    Währung, Benachrichtigungen und Rollensteuerung können im nächsten Schritt
-                    ergänzt werden. Die visuelle Basis für alle Panels und Eingaben ist jetzt
-                    konsistent auf das Dashboard-System abgestimmt.
+                    Passe das Erscheinungsbild von SubTrack an deinen persönlichen Stil an.
                   </p>
+                </div>
+
+                <div className="panel-card p-6">
+                  <p className="section-title">Farbschema</p>
+                  <h3 className="text-lg font-semibold tracking-[-0.03em] text-[var(--text-1)]">
+                    Design-Preset
+                  </h3>
+                  <p className="mb-6 mt-2 text-sm leading-6 text-[var(--text-3)]">
+                    Wähle ein Farbschema für das gesamte Dashboard. Die Auswahl wird automatisch gespeichert.
+                  </p>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {THEMES.map((t) => {
+                      const isActive = theme === t.id;
+                      const rgb = hexToRgb(t.accent);
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => setTheme(t.id)}
+                          className="relative flex flex-col gap-3 rounded-2xl border p-4 text-left transition-all duration-200"
+                          style={{
+                            borderColor: isActive ? t.accent : 'var(--border)',
+                            background: isActive
+                              ? `linear-gradient(135deg, rgba(${rgb}, 0.1) 0%, rgba(${rgb}, 0.04) 100%)`
+                              : 'rgba(255,255,255,0.02)',
+                            boxShadow: isActive
+                              ? `0 0 0 1px ${t.accent}33, 0 8px 24px rgba(${rgb}, 0.12)`
+                              : 'none',
+                          }}
+                        >
+                          <div
+                            className="flex items-center gap-2 rounded-xl p-3"
+                            style={{ background: t.bg }}
+                          >
+                            <div
+                              className="h-6 w-6 shrink-0 rounded-lg"
+                              style={{ background: t.accent, boxShadow: `0 0 12px rgba(${rgb}, 0.5)` }}
+                            />
+                            <div className="flex flex-col gap-1.5">
+                              <div
+                                className="h-2 w-16 rounded-full opacity-70"
+                                style={{ background: t.accent }}
+                              />
+                              <div className="h-1.5 w-10 rounded-full bg-white/20" />
+                              <div className="h-1.5 w-14 rounded-full bg-white/10" />
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold text-[var(--text-1)]">
+                                {t.label}
+                              </span>
+                              {isActive && (
+                                <span
+                                  className="rounded-full px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider"
+                                  style={{
+                                    background: `rgba(${rgb}, 0.15)`,
+                                    color: t.accent,
+                                  }}
+                                >
+                                  Aktiv
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-1 text-xs text-[var(--text-3)]">{t.description}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             )}
@@ -539,7 +660,7 @@ function KpiCard({ label, value, sub, subAccent = false }) {
       <div
         className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgba(183, 243, 107, 0.16) 0%, transparent 72%)',
+          background: 'radial-gradient(circle, rgba(var(--accent-rgb), 0.16) 0%, transparent 72%)',
         }}
       />
     </div>

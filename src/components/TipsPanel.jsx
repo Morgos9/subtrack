@@ -46,8 +46,8 @@ export default function TipsPanel({ onAddSub }) {
               <div
                 className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg"
                 style={{
-                  background: tip.done ? 'rgba(183, 243, 107, 0.16)' : 'rgba(255, 255, 255, 0.05)',
-                  border: `1px solid ${tip.done ? 'rgba(183, 243, 107, 0.28)' : 'rgba(255, 255, 255, 0.08)'}`,
+                  background: tip.done ? 'rgba(var(--accent-rgb), 0.16)' : 'rgba(255, 255, 255, 0.05)',
+                  border: `1px solid ${tip.done ? 'rgba(var(--accent-rgb), 0.28)' : 'rgba(255, 255, 255, 0.08)'}`,
                 }}
               >
                 {tip.done ? (
