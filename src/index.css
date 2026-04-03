@@ -261,6 +261,7 @@ input:focus-visible {
     linear-gradient(180deg, rgba(20, 27, 23, 0.96) 0%, rgba(14, 19, 16, 0.98) 100%);
   box-shadow: var(--shadow-panel);
   backdrop-filter: blur(18px);
+  overflow: hidden;
 }
 
 .panel-card--muted {
@@ -520,6 +521,7 @@ input:focus-visible {
 .hero-panel {
   position: relative;
   isolation: isolate;
+  overflow: hidden;
 }
 
 .hero-stat {
@@ -610,6 +612,7 @@ input:focus-visible {
   width: 100%;
   border-radius: 1rem;
   padding: 0.9rem;
+  overflow: hidden;
 }
 
 .theme-swatch-card__accent {

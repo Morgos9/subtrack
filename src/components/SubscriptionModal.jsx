@@ -140,7 +140,7 @@ export default function SubscriptionModal({ sub, onSave, onClose }) {
           </button>
         </div>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_320px]">
+        <div className="mt-6 grid gap-6 md:grid-cols-[minmax(0,1.2fr)_320px]">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <section className="modal-section">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end">

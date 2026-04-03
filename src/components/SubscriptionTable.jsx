@@ -114,7 +114,7 @@ export default function SubscriptionTable({ subscriptions, onEdit, onDelete }) {
                 <span className={status.className}>{status.label}</span>
               </div>
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="mt-4 grid gap-3 min-[480px]:grid-cols-2">
                 <InfoTile label="Nächste Abbuchung" value={formatBillingDate(sub.nextBilling)} />
                 <InfoTile
                   label="Abrechnung"
@@ -147,7 +147,6 @@ export default function SubscriptionTable({ subscriptions, onEdit, onDelete }) {
 
       <div className="hidden overflow-x-auto lg:block">
         <table className="w-full min-w-[920px] text-sm" aria-label="Abonnement-Tabelle">
-          <caption className="sr-only">Abonnements</caption>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
               {HEADERS.map((header) => (
