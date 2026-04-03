@@ -1,14 +1,76 @@
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CATEGORIES } from '../data/subscriptions';
 import { formatDateDE, parseISODateLocal } from '../utils/date';
+import TrialBadge from './TrialBadge';
 
-const currencyFormatter = new Intl.NumberFormat('de-DE', {
-  style: 'currency',
-  currency: 'EUR',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
+const isTouchDevice = () => {
+  if (typeof window === 'undefined') return false;
+  if (window.innerWidth < 768) return true;
+  return typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+};
 
-const formatCurrency = (value) => currencyFormatter.format(value);
+function SwipeableRow({ id, onDelete, children }) {
+  const [dismissed, setDismissed] = useState(false);
+
+  const handleDragEnd = (_event, info) => {
+    if (info.offset.x < -80) {
+      setDismissed(true);
+    }
+  };
+
+  if (!isTouchDevice()) {
+    return <>{children}</>;
+  }
+
+  return (
+    <AnimatePresence onExitComplete={() => { if (dismissed) onDelete(id); }}>
+      {!dismissed && (
+        <motion.div
+          className="relative overflow-hidden rounded-2xl"
+          initial={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          {/* Roter Hintergrund mit Trash-Icon */}
+          <div
+            className="absolute inset-0 flex items-center justify-end rounded-2xl bg-red-500/80 pr-6"
+            aria-hidden="true"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+          </div>
+
+          {/* Die eigentliche Karte — gleitet nach links */}
+          <motion.div
+            drag="x"
+            dragConstraints={{ left: -100, right: 0 }}
+            dragElastic={0.1}
+            onDragEnd={handleDragEnd}
+            animate={dismissed ? { x: '-110%' } : { x: 0 }}
+            transition={dismissed ? { duration: 0.25, ease: 'easeIn' } : {}}
+            className="relative"
+            style={{ touchAction: 'pan-y' }}
+          >
+            {children}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 const STATUS_STYLES = {
   active: {
@@ -40,7 +102,7 @@ const HEADERS = [
   'Aktionen',
 ];
 
-export default function SubscriptionTable({ subscriptions, onEdit, onDelete }) {
+export default function SubscriptionTable({ subscriptions = [], onEdit, onDelete, onPause, formatCurrency }) {
   const formatBillingDate = (dateString) => {
     const parsed = parseISODateLocal(dateString);
     if (!parsed) return '—';
@@ -74,7 +136,8 @@ export default function SubscriptionTable({ subscriptions, onEdit, onDelete }) {
           const status = STATUS_STYLES[sub.status] ?? STATUS_STYLES.cancelled;
 
           return (
-            <article key={sub.id} className="mobile-subscription-card">
+            <SwipeableRow key={sub.id} id={sub.id} onDelete={onDelete}>
+            <article className="mobile-subscription-card">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <div
@@ -105,6 +168,7 @@ export default function SubscriptionTable({ subscriptions, onEdit, onDelete }) {
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
+                {sub.trialEndDate && <TrialBadge trialEndDate={sub.trialEndDate} />}
                 <span
                   className="category-badge"
                   style={{ background: category.bg, color: category.color }}
@@ -141,6 +205,7 @@ export default function SubscriptionTable({ subscriptions, onEdit, onDelete }) {
                 </button>
               </div>
             </article>
+            </SwipeableRow>
           );
         })}
       </div>
@@ -185,9 +250,12 @@ export default function SubscriptionTable({ subscriptions, onEdit, onDelete }) {
                       </div>
 
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-[var(--text-1)]">
-                          {sub.name}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="truncate text-sm font-semibold text-[var(--text-1)]">
+                            {sub.name}
+                          </p>
+                          <TrialBadge trialEndDate={sub.trialEndDate} />
+                        </div>
                         <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[var(--text-4)]">
                           {BILLING_LABELS[sub.billing] ?? sub.billing}
                         </p>
@@ -253,7 +321,7 @@ export default function SubscriptionTable({ subscriptions, onEdit, onDelete }) {
 
 function InfoTile({ label, value }) {
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-4">
+    <div className="glass-sub-card rounded-2xl px-4 py-4">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-4)]">
         {label}
       </p>

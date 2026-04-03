@@ -6,6 +6,8 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import AreaChart from './components/AreaChart';
 import DonutChart from './components/DonutChart';
 import LineChart from './components/LineChart';
 import UpcomingBills from './components/UpcomingBills';
@@ -13,6 +15,8 @@ import SubscriptionTable from './components/SubscriptionTable';
 import SubscriptionModal from './components/SubscriptionModal';
 import TipsPanel from './components/TipsPanel';
 import UserWorkspacePanel from './components/UserWorkspacePanel';
+import EmptyState from './components/EmptyState';
+import TrialBadge from './components/TrialBadge';
 import logoUrl from './assets/logo.png';
 import {
   addDays,
@@ -21,6 +25,7 @@ import {
   startOfDay,
 } from './utils/date';
 import { createUserRecord, loadWorkspace, persistWorkspace } from './utils/workspaceStore';
+import { CATEGORIES } from './data/subscriptions';
 
 const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF'];
 const CURRENCY_STORAGE_KEY = 'subtrack-currency';
@@ -245,6 +250,12 @@ const PAGE_META = {
 const EMPTY_SUBSCRIPTIONS = [];
 const EMPTY_HISTORY = [];
 
+function toMonthlyCost(price, billing) {
+  if (billing === 'yearly') return price / 12;
+  if (billing === 'quarterly') return price / 3;
+  return price; // monthly
+}
+
 function resolvePageFromHash() {
   if (typeof window === 'undefined') return 'dashboard';
 
@@ -259,7 +270,6 @@ export default function App() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [chartRange, setChartRange] = useState('6m');
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [currency, setCurrency] = useState(() => {
     if (typeof window === 'undefined') return 'EUR';
@@ -385,6 +395,24 @@ export default function App() {
     [next7Days, renewalsInWindow],
   );
 
+  const next14Days = useMemo(() => addDays(today, 14), [today]);
+
+  const trialsSoon = useMemo(() => {
+    return subs
+      .filter((sub) => {
+        if (!sub.trialEndDate) return false;
+        const end = new Date(sub.trialEndDate + 'T00:00:00');
+        if (Number.isNaN(end.getTime())) return false;
+        return end >= today && end <= next14Days;
+      })
+      .map((sub) => {
+        const end = new Date(sub.trialEndDate + 'T00:00:00');
+        const daysLeft = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+        return { ...sub, trialDaysLeft: daysLeft };
+      })
+      .sort((a, b) => a.trialDaysLeft - b.trialDaysLeft);
+  }, [subs, today, next14Days]);
+
   const largestSubscription = useMemo(() => {
     return active.reduce(
       (largest, sub) => (!largest || sub.cost > largest.cost ? sub : largest),
@@ -414,6 +442,26 @@ export default function App() {
     () => paused.reduce((sum, sub) => sum + sub.cost, 0),
     [paused],
   );
+
+  const burnRate = useMemo(() => {
+    return active.reduce((sum, sub) => {
+      return sum + toMonthlyCost(parseFloat(sub.cost) || 0, sub.billing);
+    }, 0);
+  }, [active]);
+
+  const monthlyTrend12 = useMemo(() => {
+    const months = [];
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const label = d.toLocaleDateString('de-DE', { month: 'short' });
+      const amount = subs
+        .filter((s) => s.status === 'active' && new Date(s.startDate) <= d)
+        .reduce((sum, s) => sum + toMonthlyCost(parseFloat(s.cost) || 0, s.billing), 0);
+      months.push({ month: label, amount });
+    }
+    return months;
+  }, [subs]);
 
   const filtered = useMemo(() => {
     const query = deferredSearch.trim().toLowerCase();
@@ -475,7 +523,6 @@ export default function App() {
   const handlePageChange = useCallback((nextPage) => {
     startTransition(() => {
       setPage(nextPage);
-      setMobileNavOpen(false);
     });
   }, []);
 
@@ -592,42 +639,24 @@ export default function App() {
 
   return (
     <div className="min-h-screen text-[color:var(--text-1)]">
-      <div
-        className={`mobile-nav-backdrop ${mobileNavOpen ? 'is-open' : ''}`}
-        onClick={() => setMobileNavOpen(false)}
-        aria-hidden={!mobileNavOpen}
-      />
-
       <div className="mx-auto flex min-h-screen w-full max-w-[1680px]">
-        <aside
-          className={`dashboard-sidebar ${mobileNavOpen ? 'is-open' : ''}`}
-          style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)' }}
-        >
+        <aside className="dashboard-sidebar">
           <div className="flex h-full flex-col">
             <div
-              className="flex items-center justify-between gap-3 px-5 py-5"
+              className="sidebar-logo-area flex items-center justify-between gap-3 px-5 py-5"
               style={{ borderBottom: '1px solid var(--border)' }}
             >
               <div className="flex min-w-0 items-center gap-3">
                 <img
                   src={logoUrl}
                   alt="SubTrack Logo"
-                  className="h-11 w-11 rounded-2xl object-cover ring-1 ring-white/10"
+                  className="h-11 w-11 shrink-0 rounded-2xl object-cover ring-1 ring-white/10"
                 />
-                <div className="min-w-0">
+                <div className="sidebar-logo-text min-w-0">
                   <p className="truncate text-base font-semibold tracking-tight text-[var(--text-1)]">SubTrack</p>
                   <p className="mt-1 text-sm text-[var(--text-3)]">Subscription intelligence</p>
                 </div>
               </div>
-
-              <button
-                type="button"
-                className="dashboard-icon-button lg:hidden"
-                onClick={() => setMobileNavOpen(false)}
-                aria-label="Navigation schließen"
-              >
-                <Icon.Close />
-              </button>
             </div>
 
             <nav className="flex-1 px-3 py-4" aria-label="Hauptnavigation">
@@ -641,17 +670,18 @@ export default function App() {
                       className="nav-item"
                       data-active={isActive}
                       aria-current={isActive ? 'page' : undefined}
+                      title={item.label}
                       onClick={() => handlePageChange(item.id)}
                     >
                       <item.Icon />
-                      <span>{item.label}</span>
+                      <span className="nav-label">{item.label}</span>
                     </button>
                   );
                 })}
               </div>
             </nav>
 
-            <div className="px-4 pb-4">
+            <div className="sidebar-extra-content px-4 pb-4">
               <div className="panel-card panel-card--muted p-4">
                 <p className="section-title">Portfolio live</p>
                 <p className="text-3xl font-bold tracking-[-0.04em] text-[var(--text-1)]">
@@ -663,8 +693,8 @@ export default function App() {
               </div>
             </div>
 
-            <div className="px-4 pb-5">
-              <div className="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-2)]/80 p-4">
+            <div className="sidebar-extra-content px-4 pb-5">
+              <div className="panel-card panel-card--muted p-4">
                 <p className="section-title">Fokus</p>
                 <div className="space-y-3">
                   <SidebarStat
@@ -690,7 +720,7 @@ export default function App() {
             </div>
 
             <div
-              className="mt-auto flex flex-col gap-2 px-3 pb-4 pt-2"
+              className="sidebar-extra-content mt-auto flex flex-col gap-2 px-3 pb-4 pt-2"
               style={{ borderTop: '1px solid var(--border)' }}
             >
               {[
@@ -699,7 +729,7 @@ export default function App() {
               ].map((item) => (
                 <button key={item.label} type="button" className="nav-item">
                   <item.Icon />
-                  <span>{item.label}</span>
+                  <span className="nav-label">{item.label}</span>
                 </button>
               ))}
             </div>
@@ -720,16 +750,6 @@ export default function App() {
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      className="dashboard-icon-button lg:hidden"
-                      onClick={() => setMobileNavOpen(true)}
-                      aria-label="Navigation öffnen"
-                      aria-expanded={mobileNavOpen}
-                    >
-                      <Icon.Menu />
-                    </button>
-
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="section-title mb-0">{pageMeta.eyebrow}</p>
                       <span className="dashboard-pill hidden sm:inline-flex">{themeMeta.label}</span>
@@ -788,7 +808,16 @@ export default function App() {
             </div>
           </header>
 
-          <div className="flex flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+          <div className="main-content-area flex flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+            <AnimatePresence mode="wait">
+            <motion.div
+              key={page}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className="flex flex-col gap-6"
+            >
             {page === 'dashboard' && (
               <div className="flex flex-col gap-6">
                 <section className="hero-panel panel-card overflow-hidden p-6 lg:p-8">
@@ -908,12 +937,12 @@ export default function App() {
                       </div>
 
                       <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-4">
+                        <div className="glass-sub-card rounded-2xl px-4 py-4">
                           <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-4)]">Theme</p>
                           <p className="mt-3 text-lg font-semibold text-[var(--text-1)]">{themeMeta.label}</p>
                           <p className="mt-2 text-sm leading-6 text-[var(--text-3)]">{themeMeta.description}</p>
                         </div>
-                        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-4">
+                        <div className="glass-sub-card rounded-2xl px-4 py-4">
                           <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-4)]">Jahresprojektion</p>
                           <p className="mt-3 text-lg font-semibold text-[var(--text-1)]">
                             {formatCurrency(yearlyProjection)}
@@ -932,24 +961,86 @@ export default function App() {
                     label="YTD Ausgaben"
                     value={formatCurrency(ytdSpend)}
                     sub={`${active.length} aktive / ${paused.length} pausiert`}
+                    animIndex={0}
                   />
                   <KpiCard
                     label="Ø pro aktivem Abo"
                     value={formatCurrency(avgPerSub)}
                     sub={`${cancelled.length} gekündigt im Portfolio`}
+                    animIndex={1}
                   />
                   <KpiCard
                     label="Trend zum Vormonat"
                     value={formatPercent(monthlyTrend)}
                     sub="Basierend auf dem aktuell gewählten Analysefenster."
                     subAccent={monthlyTrend >= 0}
+                    animIndex={2}
                   />
                   <KpiCard
                     label="Renewal-Druck"
                     value={`${dueSoonCount}`}
                     sub={`${formatCurrency(plannedSpend30Days)} in den nächsten 30 Tagen`}
+                    animIndex={3}
                   />
                 </div>
+
+                {trialsSoon.length > 0 && (
+                  <section className="panel-card panel-card--interactive overflow-hidden p-6">
+                    <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="section-title">Trial Tracker</p>
+                        <h3 className="text-xl font-semibold tracking-[-0.04em] text-[var(--text-1)]">
+                          Trials ablaufend in den nächsten 14 Tagen
+                        </h3>
+                        <p className="mt-2 text-sm leading-6 text-[var(--text-3)]">
+                          Entscheide jetzt — kündige oder wechsle zum bezahlten Plan, bevor der Trial endet.
+                        </p>
+                      </div>
+                      <span className="dashboard-pill dashboard-pill--accent">
+                        {trialsSoon.length} {trialsSoon.length === 1 ? 'Trial' : 'Trials'} aktiv
+                      </span>
+                    </div>
+
+                    <div className="glass-sub-card divide-y divide-[var(--border)] overflow-hidden rounded-2xl">
+                      {trialsSoon.map((sub) => {
+                        const category = CATEGORIES[sub.category] ?? CATEGORIES.Other;
+                        return (
+                          <div key={sub.id} className="flex items-center gap-4 px-4 py-4">
+                            <div
+                              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg"
+                              style={{
+                                background: category.bg,
+                                border: `1px solid ${category.color}20`,
+                              }}
+                            >
+                              {sub.icon}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="truncate text-sm font-semibold text-[var(--text-1)]">
+                                  {sub.name}
+                                </p>
+                                <TrialBadge trialEndDate={sub.trialEndDate} />
+                              </div>
+                              <p className="mt-1 text-xs text-[var(--text-3)]">
+                                {sub.category} · {formatCurrency(sub.cost)}/Monat nach Trial
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(sub)}
+                              className="dashboard-button dashboard-button--secondary shrink-0"
+                            >
+                              Verwalten
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                )}
 
                 <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.85fr)]">
                   <div className="panel-card panel-card--interactive min-w-0 p-6">
@@ -958,6 +1049,7 @@ export default function App() {
                       range={chartRange}
                       onRangeChange={setChartRange}
                       rangeOptions={CHART_RANGES}
+                      formatCurrency={formatCurrency}
                     />
                   </div>
 
@@ -975,7 +1067,7 @@ export default function App() {
                       <span className="dashboard-pill">{renewalsInWindow.length} geplant</span>
                     </div>
 
-                    <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-2)]/80">
+                    <div className="glass-sub-card overflow-hidden rounded-2xl">
                       {[
                         { label: 'Aktive Abos', value: active.length, color: 'var(--accent)' },
                         { label: 'Pausierte Abos', value: paused.length, color: 'var(--warning)' },
@@ -996,7 +1088,7 @@ export default function App() {
                       ))}
                     </div>
 
-                    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-4">
+                    <div className="glass-sub-card rounded-2xl px-4 py-4">
                       <p className="text-xs uppercase tracking-[0.18em] text-[var(--text-4)]">Nächste Verlängerung</p>
                       <p className="mt-3 text-base font-semibold text-[var(--text-1)]">
                         {upcomingRenewal ? upcomingRenewal.name : 'Keine aktive Verlängerung'}
@@ -1043,19 +1135,24 @@ export default function App() {
                     </button>
                   </div>
 
-                  <SubscriptionTable
-                    subscriptions={active.slice(0, 5)}
-                    onEdit={openEditModal}
-                    onDelete={handleDelete}
-                  />
+                  {subs.length === 0 ? (
+                    <EmptyState onAdd={openNewModal} />
+                  ) : (
+                    <SubscriptionTable
+                      subscriptions={active.slice(0, 5)}
+                      onEdit={openEditModal}
+                      onDelete={handleDelete}
+                      formatCurrency={formatCurrency}
+                    />
+                  )}
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                   <div className="panel-card panel-card--interactive flex min-h-[320px] flex-col p-6">
-                    <DonutChart subscriptions={subs} />
+                    <DonutChart subscriptions={subs} formatCurrency={formatCurrency} />
                   </div>
                   <div className="panel-card panel-card--interactive flex min-h-[320px] flex-col p-6">
-                    <UpcomingBills subscriptions={subs} />
+                    <UpcomingBills subscriptions={subs} formatCurrency={formatCurrency} />
                   </div>
                   <div className="panel-card panel-card--interactive flex min-h-[320px] flex-col p-6 md:col-span-2 xl:col-span-1">
                     <TipsPanel onAddSub={openNewModal} />
@@ -1071,15 +1168,17 @@ export default function App() {
                     label="Aktive Kosten"
                     value={formatCurrency(monthlyTotal)}
                     sub={`${active.length} aktive Services`}
+                    animIndex={0}
                   />
                   <KpiCard
                     label="Suchtreffer"
                     value={`${filtered.length}`}
                     sub={
                       deferredSearch
-                        ? `Gefiltert nach „${deferredSearch.trim()}“`
+                        ? `Gefiltert nach „${deferredSearch.trim()}"`
                         : 'Alle Services im aktuellen Filter'
                     }
+                    animIndex={1}
                   />
                   <KpiCard
                     label="Nächste Abbuchung"
@@ -1089,6 +1188,7 @@ export default function App() {
                         ? `${shortDateFormatter.format(upcomingRenewal.date)} · ${formatCurrency(upcomingRenewal.cost)}`
                         : 'Keine aktive Verlängerung geplant'
                     }
+                    animIndex={2}
                   />
                 </div>
 
@@ -1164,22 +1264,28 @@ export default function App() {
                     </p>
                   </div>
 
-                  <SubscriptionTable
-                    subscriptions={filtered}
-                    onEdit={openEditModal}
-                    onDelete={handleDelete}
-                  />
+                  {subs.length === 0 ? (
+                    <EmptyState onAdd={openNewModal} />
+                  ) : (
+                    <SubscriptionTable
+                      subscriptions={filtered}
+                      onEdit={openEditModal}
+                      onDelete={handleDelete}
+                      formatCurrency={formatCurrency}
+                    />
+                  )}
                 </div>
               </div>
             )}
 
             {page === 'analytics' && (
               <div className="flex flex-col gap-6">
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                   <KpiCard
                     label="Analysefenster"
                     value={historyWindowLabel}
                     sub={`${visibleHistory.length} Datenpunkte sichtbar`}
+                    animIndex={0}
                   />
                   <KpiCard
                     label="Top-Kategorie"
@@ -1189,6 +1295,7 @@ export default function App() {
                         ? `${formatCurrency(topCategory.amount)} im Monat`
                         : 'Sobald aktive Abos vorhanden sind'
                     }
+                    animIndex={1}
                   />
                   <KpiCard
                     label="Größter Kostentreiber"
@@ -1198,6 +1305,13 @@ export default function App() {
                         ? `${formatCurrency(largestSubscription.cost)} pro Monat`
                         : 'Lege ein aktives Abo an'
                     }
+                    animIndex={2}
+                  />
+                  <KpiCard
+                    label="Burn-Rate / Monat"
+                    value={formatCurrency(burnRate)}
+                    sub="Jahresabos amortisiert auf 12 Monate"
+                    animIndex={3}
                   />
                 </div>
 
@@ -1208,6 +1322,7 @@ export default function App() {
                       range={chartRange}
                       onRangeChange={setChartRange}
                       rangeOptions={CHART_RANGES}
+                      formatCurrency={formatCurrency}
                     />
                   </div>
                   <div className="panel-card panel-card--interactive flex flex-col gap-4 p-6">
@@ -1261,14 +1376,18 @@ export default function App() {
 
                 <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                   <div className="panel-card panel-card--interactive flex min-h-[320px] flex-col p-6">
-                    <DonutChart subscriptions={subs} />
+                    <DonutChart subscriptions={subs} formatCurrency={formatCurrency} />
                   </div>
                   <div className="panel-card panel-card--interactive flex min-h-[320px] flex-col p-6">
-                    <UpcomingBills subscriptions={subs} />
+                    <UpcomingBills subscriptions={subs} formatCurrency={formatCurrency} />
                   </div>
                   <div className="panel-card panel-card--interactive flex min-h-[320px] flex-col p-6 md:col-span-2 xl:col-span-1">
                     <TipsPanel onAddSub={openNewModal} />
                   </div>
+                </div>
+
+                <div className="panel-card panel-card--interactive p-6">
+                  <AreaChart data={monthlyTrend12} formatCurrency={formatCurrency} />
                 </div>
               </div>
             )}
@@ -1296,6 +1415,7 @@ export default function App() {
                     onCreateUser={handleCreateUser}
                     onSelectUser={handleSelectUser}
                     onDeleteUser={handleDeleteUser}
+                    formatCurrency={formatCurrency}
                   />
 
                   <div className="panel-card p-6">
@@ -1494,18 +1614,51 @@ export default function App() {
                 </div>
               </div>
             )}
+            </motion.div>
+            </AnimatePresence>
           </div>
         </main>
 
-        {modal && (
-          <SubscriptionModal
-            key={modal === 'new' ? 'new' : modal.id}
-            sub={modal === 'new' ? null : modal}
-            onSave={handleSave}
-            onClose={closeModal}
-          />
-        )}
+        <AnimatePresence>
+          {modal && (
+            <motion.div
+              key={modal === 'new' ? 'new' : modal.id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              style={{ position: 'contents' }}
+            >
+              <SubscriptionModal
+                sub={modal === 'new' ? null : modal}
+                onSave={handleSave}
+                onClose={closeModal}
+                formatCurrency={formatCurrency}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
+      {/* Bottom Navigation — Mobile only (< 768px), gesteuert via CSS */}
+      <nav className="bottom-nav" aria-label="Mobile Navigation">
+        {NAV_ITEMS.map((item) => {
+          const isActive = page === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className="bottom-nav-item"
+              data-active={isActive}
+              aria-current={isActive ? 'page' : undefined}
+              onClick={() => handlePageChange(item.id)}
+            >
+              <item.Icon />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 }
@@ -1541,9 +1694,14 @@ function HeroStat({ label, value, meta, icon, accent = false }) {
   );
 }
 
-function KpiCard({ label, value, sub, subAccent = false }) {
+function KpiCard({ label, value, sub, subAccent = false, animIndex = 0 }) {
   return (
-    <div className="panel-card panel-card--interactive relative flex min-h-[138px] flex-col overflow-hidden p-6">
+    <motion.div
+      className="panel-card panel-card--interactive relative flex min-h-[138px] flex-col overflow-hidden p-6"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, delay: animIndex * 0.05 }}
+    >
       <p className="section-title">{label}</p>
       <p className="text-3xl font-bold tracking-[-0.04em] text-[var(--text-1)]">{value}</p>
       <p
@@ -1559,6 +1717,6 @@ function KpiCard({ label, value, sub, subAccent = false }) {
           background: 'radial-gradient(circle, rgba(var(--accent-rgb), 0.16) 0%, transparent 72%)',
         }}
       />
-    </div>
+    </motion.div>
   );
 }

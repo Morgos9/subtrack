@@ -1,12 +1,3 @@
-const currencyFormatter = new Intl.NumberFormat('de-DE', {
-  style: 'currency',
-  currency: 'EUR',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-const formatCurrency = (value) => currencyFormatter.format(value);
-
 function getUserSummary(user) {
   const activeSubscriptions = user.subscriptions.filter((sub) => sub.status === 'active');
   const monthlyTotal = activeSubscriptions.reduce((sum, sub) => sum + sub.cost, 0);
@@ -26,6 +17,7 @@ export default function UserWorkspacePanel({
   onCreateUser,
   onSelectUser,
   onDeleteUser,
+  formatCurrency,
 }) {
   return (
     <div className="panel-card p-6">
@@ -50,10 +42,15 @@ export default function UserWorkspacePanel({
           return (
             <article
               key={user.id}
-              className="rounded-[1.5rem] border px-4 py-4"
+              className="rounded-[1.5rem] border px-4 py-4 transition-all duration-200"
               style={{
-                borderColor: isActive ? 'rgba(var(--accent-rgb), 0.4)' : 'var(--border)',
-                background: isActive ? 'rgba(var(--accent-rgb), 0.08)' : 'var(--surface-2)',
+                borderColor: isActive ? 'rgba(var(--accent-rgb), 0.4)' : 'var(--glass-border)',
+                background: isActive
+                  ? 'rgba(var(--accent-rgb), 0.10)'
+                  : 'rgba(255, 255, 255, 0.05)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.3)',
               }}
             >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

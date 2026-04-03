@@ -30,14 +30,21 @@ It is intentionally frontend-only: no backend, no sign-in, no external API depen
 
 ## What The Project Includes
 
-- A high-contrast dashboard with monthly spend, renewals, trend analysis, and portfolio highlights
-- A responsive subscription management view with search, status filters, quick actions, and mobile cards
-- Custom SVG charts for spend history and category breakdown without adding a chart library
-- A structured add/edit modal with plan lookup, live preview, and consistent monthly-value handling
+- A high-contrast dashboard with monthly spend, renewals, burn-rate analysis, trial tracker, and portfolio highlights
+- A responsive subscription management view with search, status filters, quick actions, and swipe-to-delete on mobile
+- Custom SVG charts: spend history bar chart, category donut, and a 12-month area chart with hover tooltip
+- A structured add/edit modal with plan lookup, trial end-date support, live preview, and monthly-value normalization
+- Multi-currency support: EUR, USD, GBP, and CHF selectable in settings, formatted via `Intl.NumberFormat`
+- Glassmorphism 2.0 UI: consistent `backdrop-blur` glass cards across all surfaces and themes
+- Responsive layout: bottom navigation bar on mobile, icon-only sidebar on tablet, full sidebar on desktop
+- Framer Motion animations: staggered stats cards, page transitions, modal scale-in/out, and empty-state entrance
+- Empty state onboarding screen shown when no subscriptions exist
+- Trial Tracker: color-coded badges (red/orange/amber) for expiring trials, dashboard warning section
 - Local user workspaces with separate subscription data, themes, and history persisted in `localStorage`
 - Multiple visual presets with persistent theme selection via `localStorage`
 - Hash-based deep links for core screens: `#dashboard`, `#subscriptions`, `#analytics`, and `#settings`
-- A curated demo dataset with category colors, icons, billing dates, and German-market example pricing
+- A curated demo dataset with category colors, icons, billing dates, trial dates, and German-market example pricing
+- 46 automated unit tests covering date utilities, price lookup, and billing calculations
 
 ## Why SubTrack
 
@@ -55,7 +62,9 @@ Many subscription dashboards stop at showing a table of services. SubTrack pushe
 | UI | React 19 |
 | Build tooling | Vite 8 |
 | Styling | Tailwind CSS 4 plus custom CSS tokens/components |
+| Animation | Framer Motion |
 | Charts | Hand-built SVG components |
+| Testing | Vitest 3 + @vitest/coverage-v8 |
 | Linting | ESLint 9 |
 
 ## Feature Overview
@@ -64,10 +73,10 @@ Many subscription dashboards stop at showing a table of services. SubTrack pushe
 
 The dashboard is the main decision surface. It combines:
 
-- live monthly run rate
+- live monthly run rate (burn-rate with yearly subscription amortization)
 - 30-day renewal load
 - category concentration
-- year-to-date cost context
+- trial tracker section: upcoming trial expirations with color-coded urgency
 - spend trend over time
 - direct navigation into management workflows
 
@@ -78,25 +87,30 @@ The subscriptions area supports:
 - searching by service name
 - filtering by active, paused, and cancelled status
 - editing and deleting entries
+- swipe-to-delete gesture on mobile with animated slide-out and red delete indicator
 - optimized mobile cards for smaller screens
-- clear category and status badges
+- trial end-date tracking with color-coded badge per entry
+- empty state onboarding screen when no subscriptions exist
 
 ### 3. Analytics
 
 The analytics page provides:
 
-- a selectable time window for spend history
+- burn-rate KPI: total monthly cost with yearly subscriptions amortized over 12 months
+- 12-month area chart: rolling spend trend with hover tooltip
+- a selectable time window for spend history bar chart
 - trend vs. previous month
 - peak period visibility
-- category composition
+- category composition donut chart
 - renewal pressure context
 
 ### 4. Settings
 
-Settings now focus on workspace and visual customization:
+Settings focus on workspace and visual customization:
 
+- multi-currency selector: EUR, USD, GBP, CHF — applied globally across all views
 - local browser persistence for multiple users
-- multiple curated color presets
+- multiple curated color presets (Forest, Ocean, Dusk, Ember, Rose)
 - per-user persistent theme selection
 - live workspace-style preview
 
@@ -165,13 +179,17 @@ app/
 │   │   ├── react.svg
 │   │   └── vite.svg
 │   ├── components/
+│   │   ├── AreaChart.jsx           # 12-month spend area chart (SVG)
 │   │   ├── BarChart.jsx
 │   │   ├── DonutChart.jsx
+│   │   ├── EmptyState.jsx          # onboarding screen for new users
 │   │   ├── LineChart.jsx
 │   │   ├── SubscriptionModal.jsx
 │   │   ├── SubscriptionTable.jsx
 │   │   ├── TipsPanel.jsx
-│   │   └── UpcomingBills.jsx
+│   │   ├── TrialBadge.jsx          # color-coded trial expiry badge
+│   │   ├── UpcomingBills.jsx
+│   │   └── UserWorkspacePanel.jsx
 │   ├── data/
 │   │   └── subscriptions.js    # seed data and category tokens
 │   ├── utils/
@@ -244,18 +262,18 @@ This repository is intentionally focused on frontend product quality and fast lo
 
 - authenticated multi-user support across devices
 - server-side data syncing
-- automated tests
-- import/export flows
+- import/export flows (CSV / bank statement parsing)
 
-## Roadmap Ideas
+## Roadmap
 
-The project is a good foundation for extending toward a full product. Strong next steps would be:
+See **[ROADMAP.md](ROADMAP.md)** for the full prioritized roadmap. Strong next steps include:
 
-- recurring renewal notifications
-- CSV import/export
-- usage-based or annual billing support
-- sortable columns and richer analytics
-- backend sync and user accounts
+- TypeScript migration (Phase 0)
+- Zustand global state management (Phase 0)
+- PWA support — installable as standalone app (Phase 4)
+- CSV import/export — parse bank exports (Phase 4)
+- Supabase auth and real-time sync (Phase 4)
+- Savings Coach — AI-based subscription suggestions (Phase 5)
 
 ## Accessibility And UX Notes
 

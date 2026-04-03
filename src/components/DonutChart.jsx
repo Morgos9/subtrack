@@ -1,21 +1,12 @@
 import { useId, useMemo } from 'react';
 import { CATEGORIES } from '../data/subscriptions';
 
-const currencyFormatter = new Intl.NumberFormat('de-DE', {
-  style: 'currency',
-  currency: 'EUR',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
 const percentFormatter = new Intl.NumberFormat('de-DE', {
   minimumFractionDigits: 0,
   maximumFractionDigits: 0,
 });
 
-const formatCurrency = (value) => currencyFormatter.format(value);
-
-export default function DonutChart({ subscriptions }) {
+export default function DonutChart({ subscriptions, formatCurrency }) {
   const glowId = useId().replace(/:/g, '');
 
   const { total, segments, activeCount } = useMemo(() => {
@@ -137,7 +128,7 @@ export default function DonutChart({ subscriptions }) {
               </g>
             </svg>
 
-            <div className="absolute inset-[38px] flex flex-col items-center justify-center rounded-full border border-[var(--border)] bg-[radial-gradient(circle_at_top,rgba(183,243,107,0.12),transparent_60%),rgba(11,16,13,0.92)] text-center shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
+            <div className="absolute inset-[38px] flex flex-col items-center justify-center rounded-full text-center" style={{ border: '1px solid var(--glass-border)', background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', boxShadow: '0 18px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)' }}>
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--text-3)]">
                 Pro Monat
               </p>
@@ -151,7 +142,7 @@ export default function DonutChart({ subscriptions }) {
 
         <div className="grid gap-3">
           {segments.length === 0 && (
-            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-4 text-sm text-[var(--text-3)]">
+            <div className="glass-sub-card rounded-2xl px-4 py-4 text-sm text-[var(--text-3)]">
               Keine aktiven Abos vorhanden.
             </div>
           )}
@@ -159,7 +150,7 @@ export default function DonutChart({ subscriptions }) {
           {segments.map((segment) => (
             <div
               key={segment.category}
-              className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-4"
+              className="glass-sub-card flex items-center justify-between gap-3 rounded-2xl px-4 py-4"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <span

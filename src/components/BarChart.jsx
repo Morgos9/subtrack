@@ -1,5 +1,8 @@
-export default function BarChart({ data }) {
+export default function BarChart({ data, formatCurrency }) {
   const max = Math.max(0, ...data.map(d => d.amount));
+
+  const defaultFormat = (value) => `${value.toFixed(2)} €`;
+  const fmt = formatCurrency ?? defaultFormat;
 
   return (
     <div className="flex flex-col gap-3">
@@ -10,7 +13,7 @@ export default function BarChart({ data }) {
           const height = max > 0 ? (d.amount / max) * 100 : 0;
           return (
             <div key={d.month} className="flex-1 flex flex-col items-center gap-1">
-              <span className="text-xs text-slate-400">{d.amount.toFixed(0)}€</span>
+              <span className="text-xs text-slate-400">{fmt(d.amount)}</span>
               <div
                 className="w-full rounded-t-md transition-all duration-500"
                 style={{
@@ -20,9 +23,9 @@ export default function BarChart({ data }) {
                     : 'linear-gradient(180deg, #3B82F6, #1e3a5f)',
                   minHeight: 4,
                 }}
-                title={`${d.month}: ${d.amount.toFixed(2)}€`}
+                title={`${d.month}: ${fmt(d.amount)}`}
                 role="img"
-                aria-label={`${d.month}: ${d.amount.toFixed(2)} Euro`}
+                aria-label={`${d.month}: ${fmt(d.amount)}`}
               />
               <span className="text-xs text-slate-500">{d.month}</span>
             </div>

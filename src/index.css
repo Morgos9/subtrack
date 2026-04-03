@@ -314,6 +314,7 @@ input:focus-visible {
 
 .panel-card--interactive:hover {
   transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.08);
   border-color: var(--border-strong);
   box-shadow:
     0 22px 52px rgba(0, 0, 0, 0.34),
@@ -593,15 +594,35 @@ input:focus-visible {
   color: var(--accent);
 }
 
+/* ── Glassmorphism sub-card (nested panels innerhalb von panel-card) ── */
+.glass-sub-card {
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  transition:
+    background 200ms ease-out,
+    border-color 200ms ease-out;
+}
+
+.glass-sub-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
 .sidebar-stat,
 .focus-list-row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--glass-border);
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
   padding: 0.9rem 1rem;
 }
 
@@ -696,11 +717,23 @@ input:focus-visible {
 }
 
 .mobile-subscription-card {
-  border: 1px solid var(--border);
+  border: 1px solid var(--glass-border);
   border-radius: 1.25rem;
-  background: linear-gradient(180deg, rgba(20, 27, 23, 0.96) 0%, rgba(14, 19, 16, 0.98) 100%);
-  box-shadow: var(--shadow-soft);
+  background: var(--glass-panel);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(12px) saturate(180%);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 var(--glass-border);
   padding: 1rem;
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease;
+}
+
+.mobile-subscription-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-strong);
 }
 
 .empty-state-card {
@@ -864,27 +897,125 @@ input:focus-visible {
   transform: translateY(-1px);
 }
 
-@media (max-width: 1023px) {
-  .dashboard-sidebar {
+/* ── Bottom Navigation (Mobile < 768px) ──────────────────── */
+.bottom-nav {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .bottom-nav {
+    display: flex;
     position: fixed;
-    top: 0;
-    left: 0;
     bottom: 0;
+    left: 0;
+    right: 0;
     z-index: 40;
-    width: min(19rem, calc(100vw - 2rem));
-    min-width: min(19rem, calc(100vw - 2rem));
-    transform: translateX(-108%);
-    transition: transform 180ms ease;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
-    /* Stärkerer Glass-Hintergrund auf Mobile damit Drawer lesbar ist */
+    align-items: center;
+    justify-content: space-around;
+    height: 4.25rem;
+    border-top: 1px solid var(--glass-border);
     background: var(--glass-sidebar);
-    -webkit-backdrop-filter: blur(28px) saturate(160%);
-    backdrop-filter: blur(28px) saturate(160%);
-    border-right: 1px solid var(--border);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
 
-  .dashboard-sidebar.is-open {
-    transform: translateX(0);
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    flex: 1;
+    height: 100%;
+    padding: 0.5rem 0.25rem;
+    border: none;
+    background: transparent;
+    color: var(--text-4);
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition:
+      color 180ms ease,
+      transform 180ms ease;
+  }
+
+  .bottom-nav-item[data-active="true"] {
+    color: var(--accent);
+  }
+
+  .bottom-nav-item:active {
+    transform: scale(0.92);
+  }
+
+  /* Sidebar versteckt auf Mobile — Bottom-Nav übernimmt */
+  .dashboard-sidebar {
+    display: none !important;
+  }
+
+  /* Mobile: kein Backdrop mehr nötig */
+  .mobile-nav-backdrop {
+    display: none;
+  }
+
+  /* Main-Content bekommt Padding für Bottom-Nav */
+  .main-content-area {
+    padding-bottom: 5rem;
+  }
+}
+
+/* ── Tablet Sidebar (768px–1023px): schmale Icon-Leiste ──── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .dashboard-sidebar {
+    width: 4rem;
+    min-width: 4rem;
+    overflow: hidden;
+  }
+
+  /* Logo-Bereich auf Tablet: nur Icon, kein Text */
+  .sidebar-logo-text {
+    display: none;
+  }
+
+  /* Logo-Bereich kompakter */
+  .sidebar-logo-area {
+    justify-content: center;
+    padding: 1rem 0.5rem;
+  }
+
+  /* Nav-Items: nur Icon, kein Label */
+  .nav-item .nav-label {
+    display: none;
+  }
+
+  .nav-item {
+    justify-content: center;
+    padding: 0.75rem 0.5rem;
+    min-height: 3rem;
+  }
+
+  /* Sidebar-Content-Blöcke (Portfolio live, Fokus, Footer) ausblenden */
+  .sidebar-extra-content {
+    display: none;
+  }
+
+  /* Close-Button im Tablet unsichtbar */
+  .sidebar-close-btn {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .dashboard-sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+
+  .main-content-area {
+    padding-bottom: 0;
   }
 }
 
@@ -893,10 +1024,21 @@ input:focus-visible {
     display: none;
   }
 
-  .dashboard-sidebar {
-    position: sticky;
-    top: 0;
-    height: 100vh;
+  .bottom-nav {
+    display: none;
+  }
+
+  /* Desktop: alle Sidebar-Elemente wieder sichtbar */
+  .sidebar-logo-text {
+    display: block;
+  }
+
+  .sidebar-extra-content {
+    display: block;
+  }
+
+  .nav-item .nav-label {
+    display: inline;
   }
 }
 
@@ -938,6 +1080,18 @@ input:focus-visible {
   .grid.md\\:grid-cols-2.xl\\:grid-cols-4 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  /* Sidebar auf Tablet: Tooltip-hint via title-Attribut reicht */
+  .dashboard-sidebar {
+    box-shadow: 2px 0 16px rgba(0, 0, 0, 0.25);
+  }
+}
+
+/* ── Line Chart responsive ───────────────────────────────── */
+/* SVG-Chart skaliert mit viewBox, overflow sicher per clip */
+.chart-svg-wrapper {
+  overflow: hidden;
+  border-radius: 0.75rem;
 }
 
 /* ── Kleine Mobile-Fixes (max 479px) ────────────────────── */

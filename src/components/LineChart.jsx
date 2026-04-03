@@ -1,18 +1,10 @@
 import { useMemo, useState } from 'react';
 
-const currencyFormatter = new Intl.NumberFormat('de-DE', {
-  style: 'currency',
-  currency: 'EUR',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
 const percentFormatter = new Intl.NumberFormat('de-DE', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
 
-const formatCurrency = (value) => currencyFormatter.format(value);
 const formatPercent = (value) =>
   `${value >= 0 ? '+' : ''}${percentFormatter.format(value)}%`;
 
@@ -23,6 +15,7 @@ export default function LineChart({
   range = '6m',
   onRangeChange,
   rangeOptions = [],
+  formatCurrency,
 }) {
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
@@ -280,7 +273,7 @@ export default function LineChart({
           )}
         </svg>
       ) : (
-        <div className="mt-6 flex h-[220px] items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-6 py-6 text-center text-sm text-[var(--text-3)]">
+        <div className="glass-sub-card mt-6 flex h-[220px] items-center justify-center rounded-2xl px-6 py-6 text-center text-sm text-[var(--text-3)]">
           Noch keine Verlaufsdaten fuer diesen Nutzer vorhanden.
         </div>
       )}
@@ -290,7 +283,7 @@ export default function LineChart({
         <MetricTile label="Ø pro Monat" value={formatCurrency(average)} />
         <MetricTile
           label="Peak"
-          value={peak ? formatCurrency(peak.amount) : '0,00 €'}
+          value={peak ? formatCurrency(peak.amount) : formatCurrency(0)}
           meta={peak ? peak.month : 'Keine Daten'}
         />
       </div>
@@ -300,7 +293,7 @@ export default function LineChart({
 
 function MetricTile({ label, value, meta }) {
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-4">
+    <div className="glass-sub-card rounded-2xl px-4 py-4">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-4)]">
         {label}
       </p>

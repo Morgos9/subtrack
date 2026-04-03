@@ -1,16 +1,8 @@
 import { addDays, formatDateDE, parseISODateLocal, startOfDay } from '../utils/date';
 import { CATEGORIES } from '../data/subscriptions';
+import TrialBadge from './TrialBadge';
 
-const currencyFormatter = new Intl.NumberFormat('de-DE', {
-  style: 'currency',
-  currency: 'EUR',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-const formatCurrency = (value) => currencyFormatter.format(value);
-
-export default function UpcomingBills({ subscriptions }) {
+export default function UpcomingBills({ subscriptions, formatCurrency }) {
   const today = startOfDay(new Date());
   const in30Days = addDays(today, 30);
 
@@ -33,13 +25,13 @@ export default function UpcomingBills({ subscriptions }) {
 
       <div className="mt-6 flex flex-1 flex-col">
         {upcoming.length === 0 && (
-          <div className="flex flex-1 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-6 py-6 text-center text-sm text-[var(--text-3)]">
+          <div className="glass-sub-card flex flex-1 items-center justify-center rounded-2xl px-6 py-6 text-center text-sm text-[var(--text-3)]">
             Keine anstehenden Abbuchungen in den nächsten 30 Tagen.
           </div>
         )}
 
         {upcoming.length > 0 && (
-          <div className="flex flex-1 flex-col divide-y divide-[var(--border)] rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4">
+          <div className="glass-sub-card flex flex-1 flex-col divide-y divide-[var(--border)] rounded-2xl px-4">
             {upcoming.map((sub) => {
               const category = CATEGORIES[sub.category] ?? CATEGORIES.Other;
               const daysLeft = Math.ceil((sub.date - today) / (1000 * 60 * 60 * 24));
@@ -75,6 +67,7 @@ export default function UpcomingBills({ subscriptions }) {
                       >
                         {sub.category}
                       </span>
+                      <TrialBadge trialEndDate={sub.trialEndDate} />
                     </div>
                     <p className="mt-2 text-sm text-[var(--text-3)]">
                       {relativeLabel} / {formatDateDE(sub.date, { day: '2-digit', month: 'short' })}

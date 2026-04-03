@@ -16,7 +16,7 @@ Strategic roadmap for SubTrack — evolving from a polished UI demo into a profe
 | ❌ | **TypeScript Migration** — convert all `.js`/`.jsx` to `.ts`/`.tsx` | Currently all JSX; no tsconfig |
 | ❌ | **Global State Management** — introduce Zustand for subscription data | Custom `workspaceStore.js` works but not scalable |
 | ✅ | **Data Schema Definition** — central Subscription interface | Defined in `src/data/subscriptions.js` |
-| ❌ | **Testing Setup** — Vitest for core calculation logic | `tests/` directory exists, no runner configured |
+| ✅ | **Testing Setup** — Vitest for core calculation logic | 46 Tests, 3 Dateien |
 
 ---
 
@@ -31,7 +31,7 @@ Strategic roadmap for SubTrack — evolving from a polished UI demo into a profe
 | ✅ | **Pause Function** — temporarily deactivate subscriptions | `status: 'paused'` implemented; paused cost tracked |
 | ✅ | **Smart Billing Logic** — weekly / monthly / quarterly / yearly | `BILLING_OPTIONS` in `SubscriptionModal.jsx` |
 | ✅ | **Price Lookup** — curated DB with 40+ services (EUR), fuzzy matching | `src/utils/priceLookup.js` |
-| ❌ | **I18n & Currency** — select currency (€, $, £, CHF) and date format | EUR only; no locale switching |
+| ✅ | **I18n & Currency** — select currency (€, $, £, CHF) and date format | EUR, USD, GBP, CHF via Intl.NumberFormat, Settings-Tab Selector |
 
 ---
 
@@ -42,13 +42,13 @@ Strategic roadmap for SubTrack — evolving from a polished UI demo into a profe
 | Status | Task | Notes |
 |--------|------|-------|
 | ❌ | **Bento-Grid Layout** — modular card tile system | Current layout is column-based, not full Bento |
-| 🚧 | **Glassmorphism 2.0** — Tailwind 4 backdrop-blur on cards and sidebars | Grundstruktur vorhanden, aber visuell nicht konsistent — muss sauber neu aufgesetzt werden |
+| ✅ | **Glassmorphism 2.0** — Tailwind 4 backdrop-blur on cards and sidebars | .glass-sub-card konsistent, backdrop-blur-md, keine hardcoded bg-surface-2 mehr |
 | ✅ | **Theme System** — 5 color presets, persisted via localStorage | Forest, Midnight, Ocean, Ember, Lavender |
-| 🚧 | **Responsive Design** — full overhaul across all breakpoints | Vorhanden, aber noch nicht ausreichend — Layout auf Tablet/Mobile bricht in Teilen, muss ordentlich neu aufgesetzt werden |
+| ✅ | **Responsive Design** — full overhaul across all breakpoints | Bottom-Nav (Mobile <768px), Icon-Sidebar (Tablet 768-1023px), volle Sidebar (Desktop ≥1024px) |
 | ✅ | **Dark Mode Excellence** — well-calibrated contrast for night mode | All 5 themes are dark-first |
-| ❌ | **Micro-Interactions** — Framer Motion list animations | No animation library installed |
-| ❌ | **Swipe-to-Delete** — gesture support on mobile | Not implemented |
-| ❌ | **Empty State** — motivating onboarding screen for new users | No empty state handling |
+| ✅ | **Micro-Interactions** — Framer Motion list animations | Framer Motion: Stats-Cards staggered, Seiten-Wechsel, Modal scale-Animation |
+| ✅ | **Swipe-to-Delete** — gesture support on mobile | framer-motion drag auf Mobile, roter Delete-Hintergrund, animiertes Herausfliegen |
+| ✅ | **Empty State** — motivating onboarding screen for new users | EmptyState.jsx mit Onboarding-Screen, CTA-Button, framer-motion Animations |
 
 ---
 
@@ -58,11 +58,11 @@ Strategic roadmap for SubTrack — evolving from a polished UI demo into a profe
 
 | Status | Task | Notes |
 |--------|------|-------|
-| ❌ | **Burn-Rate Dashboard** — real monthly cost with yearly subs amortised | Only raw sum shown; no amortisation |
-| ❌ | **Area Charts** — 12-month spend trend as area chart | `LineChart.jsx` exists (SVG line only) |
+| ✅ | **Burn-Rate Dashboard** — real monthly cost with yearly subs amortised | Amortisierung Jahresabos, useMemo burnRate, KPI-Karte in Analytics |
+| ✅ | **Area Charts** — 12-month spend trend as area chart | AreaChart.jsx SVG-basiert, 12-Monats-Trend, Hover-Tooltip |
 | ✅ | **Category Donut** — streaming vs fitness vs software breakdown | `src/components/DonutChart.jsx` |
 | ✅ | **Spend History Bar** — monthly spend visualisation | `src/components/BarChart.jsx` |
-| ❌ | **Trial Tracker** — warning badge for free trials with expiry date | Not implemented |
+| ✅ | **Trial Tracker** — warning badge for free trials with expiry date | TrialBadge.jsx (rot/orange/amber), Modal-Felder, Dashboard-Sektion, Demo-Daten |
 | ❌ | **Price History** — log price increases per provider | Not implemented |
 
 ---
@@ -114,13 +114,13 @@ For AI editors (Codex / Cursor / Copilot):
 
 Recommended sequence based on dependencies and impact:
 
-1. **Phase 2** → Glassmorphism 2.0 & Responsive Design — sauber neu aufsetzen (höchste Priorität)
-2. **Phase 0** → Vitest setup (isolated, no breaking changes)
-3. **Phase 1** → Currency/locale selection
-4. **Phase 2** → Empty states + Framer Motion animations
-5. **Phase 2** → Swipe-to-delete (mobile)
-6. **Phase 3** → Burn-rate calculation + Area chart
-7. **Phase 3** → Trial tracker
+1. ✅ **Phase 2** → Glassmorphism 2.0 & Responsive Design — sauber neu aufsetzen (höchste Priorität)
+2. ✅ **Phase 0** → Vitest setup (isolated, no breaking changes)
+3. ✅ **Phase 1** → Currency/locale selection
+4. ✅ **Phase 2** → Empty states + Framer Motion animations
+5. ✅ **Phase 2** → Swipe-to-delete (mobile)
+6. ✅ **Phase 3** → Burn-rate calculation + Area chart
+7. ✅ **Phase 3** → Trial tracker
 8. **Phase 0** → TypeScript migration (after features stabilise)
 9. **Phase 0** → Zustand migration (after TS)
 10. **Phase 4** → PWA support

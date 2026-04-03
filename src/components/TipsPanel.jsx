@@ -40,7 +40,7 @@ export default function TipsPanel({ onAddSub }) {
         {TIPS.map((tip) => (
           <div
             key={tip.id}
-            className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-4"
+            className="glass-sub-card rounded-2xl px-4 py-4"
           >
             <div className="flex items-start gap-3">
               <div

@@ -7,17 +7,18 @@ export const CATEGORIES = {
   Other:     { color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' },
 };
 
+// trialEndDate: ISO-Datumsstring (z. B. '2026-04-08') oder null (= kein Trial)
 export const initialSubscriptions = [
-  { id: 1, name: 'Netflix',       category: 'Streaming', cost: 15.99, billing: 'monthly', nextBilling: '2026-04-15', status: 'active',    icon: '🎬' },
-  { id: 2, name: 'Spotify',       category: 'Music',     cost: 9.99,  billing: 'monthly', nextBilling: '2026-04-20', status: 'active',    icon: '🎵' },
-  { id: 3, name: 'Adobe CC',      category: 'Software',  cost: 54.99, billing: 'monthly', nextBilling: '2026-05-01', status: 'active',    icon: '🎨' },
-  { id: 4, name: 'GitHub Pro',    category: 'Software',  cost: 4.00,  billing: 'monthly', nextBilling: '2026-04-18', status: 'active',    icon: '💻' },
-  { id: 5, name: 'Fitbit Premium',category: 'Fitness',   cost: 8.99,  billing: 'monthly', nextBilling: '2026-04-22', status: 'paused',   icon: '🏃' },
-  { id: 6, name: 'Xbox Game Pass',category: 'Gaming',    cost: 14.99, billing: 'monthly', nextBilling: '2026-04-28', status: 'active',    icon: '🎮' },
-  { id: 7, name: 'Headspace',     category: 'Fitness',   cost: 9.99,  billing: 'monthly', nextBilling: '2026-05-05', status: 'active',    icon: '🧘' },
-  { id: 8, name: 'Disney+',       category: 'Streaming', cost: 8.99,  billing: 'monthly', nextBilling: '2026-05-10', status: 'active',    icon: '✨' },
-  { id: 9, name: 'iCloud',        category: 'Software',  cost: 2.99,  billing: 'monthly', nextBilling: '2026-04-14', status: 'active',    icon: '☁️' },
-  { id: 10,name: 'PS Plus',       category: 'Gaming',    cost: 8.99,  billing: 'monthly', nextBilling: '2026-04-30', status: 'cancelled', icon: '🕹️' },
+  { id: 1, name: 'Netflix',       category: 'Streaming', cost: 15.99, billing: 'monthly', nextBilling: '2026-04-15', status: 'active',    icon: '🎬', trialEndDate: null },
+  { id: 2, name: 'Spotify',       category: 'Music',     cost: 9.99,  billing: 'monthly', nextBilling: '2026-04-20', status: 'active',    icon: '🎵', trialEndDate: null },
+  { id: 3, name: 'Adobe CC',      category: 'Software',  cost: 54.99, billing: 'monthly', nextBilling: '2026-05-01', status: 'active',    icon: '🎨', trialEndDate: '2026-04-08' },
+  { id: 4, name: 'GitHub Pro',    category: 'Software',  cost: 4.00,  billing: 'monthly', nextBilling: '2026-04-18', status: 'active',    icon: '💻', trialEndDate: null },
+  { id: 5, name: 'Fitbit Premium',category: 'Fitness',   cost: 8.99,  billing: 'monthly', nextBilling: '2026-04-22', status: 'paused',    icon: '🏃', trialEndDate: null },
+  { id: 6, name: 'Xbox Game Pass',category: 'Gaming',    cost: 14.99, billing: 'monthly', nextBilling: '2026-04-28', status: 'active',    icon: '🎮', trialEndDate: '2026-04-17' },
+  { id: 7, name: 'Headspace',     category: 'Fitness',   cost: 9.99,  billing: 'monthly', nextBilling: '2026-05-05', status: 'active',    icon: '🧘', trialEndDate: null },
+  { id: 8, name: 'Disney+',       category: 'Streaming', cost: 8.99,  billing: 'monthly', nextBilling: '2026-05-10', status: 'active',    icon: '✨', trialEndDate: null },
+  { id: 9, name: 'iCloud',        category: 'Software',  cost: 2.99,  billing: 'monthly', nextBilling: '2026-04-14', status: 'active',    icon: '☁️', trialEndDate: null },
+  { id: 10,name: 'PS Plus',       category: 'Gaming',    cost: 8.99,  billing: 'monthly', nextBilling: '2026-04-30', status: 'cancelled', icon: '🕹️', trialEndDate: null },
 ];
 
 export const monthlyHistory = [

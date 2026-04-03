@@ -15,20 +15,30 @@ const STATUS_OPTIONS = [
 ];
 
 function createInitialForm(sub) {
-  return (
-    sub ?? {
-      name: '',
-      category: 'Streaming',
-      cost: '',
-      billing: 'monthly',
-      nextBilling: toISODateLocal(new Date()),
-      status: 'active',
-      icon: '📦',
-    }
-  );
+  if (sub) {
+    return {
+      ...sub,
+      isTrial: Boolean(sub.trialEndDate),
+      trialEndDate: sub.trialEndDate ?? '',
+    };
+  }
+  return {
+    name: '',
+    category: 'Streaming',
+    cost: '',
+    billing: 'monthly',
+    nextBilling: toISODateLocal(new Date()),
+    status: 'active',
+    icon: '📦',
+    isTrial: false,
+    trialEndDate: '',
+  };
 }
 
-export default function SubscriptionModal({ sub, onSave, onClose }) {
+export default function SubscriptionModal({ sub, onSave, onClose, formatCurrency }) {
+  const defaultFormatCurrency = (value) =>
+    new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+  const fmt = formatCurrency ?? defaultFormatCurrency;
   const uid = useId();
   const nameRef = useRef(null);
   const [form, setForm] = useState(() => createInitialForm(sub));
@@ -95,6 +105,7 @@ export default function SubscriptionModal({ sub, onSave, onClose }) {
       ...form,
       cost,
       id: sub?.id || Date.now(),
+      trialEndDate: form.isTrial && form.trialEndDate ? form.trialEndDate : null,
     });
   };
 
@@ -176,7 +187,7 @@ export default function SubscriptionModal({ sub, onSave, onClose }) {
 
               <div aria-live="polite" className="mt-4">
                 {priceMatches.length > 0 && (
-                  <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-4">
+                  <div className="glass-sub-card rounded-2xl px-4 py-4">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-4)]">
                       Erkannten Dienst wählen
                     </p>
@@ -211,7 +222,7 @@ export default function SubscriptionModal({ sub, onSave, onClose }) {
                           >
                             <span>{plan.label}</span>
                             <span className="font-semibold text-[var(--accent)]">
-                              {plan.monthly.toFixed(2)} €/Monat
+                              {fmt(plan.monthly)}/Monat
                             </span>
                           </button>
                         ))}
@@ -221,7 +232,7 @@ export default function SubscriptionModal({ sub, onSave, onClose }) {
                 )}
 
                 {lookedUp && priceMatches.length === 0 && (
-                  <div className="mt-2 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-4 text-sm text-[var(--text-3)]">
+                  <div className="glass-sub-card mt-2 rounded-2xl px-4 py-4 text-sm text-[var(--text-3)]">
                     Kein passender Dienst gefunden. Du kannst das Abo trotzdem manuell anlegen.
                   </div>
                 )}
@@ -327,6 +338,42 @@ export default function SubscriptionModal({ sub, onSave, onClose }) {
               </div>
             </section>
 
+            <section className="modal-section">
+              <div className="flex items-center gap-3">
+                <input
+                  id={`${uid}-is-trial`}
+                  type="checkbox"
+                  className="h-4 w-4 cursor-pointer accent-[var(--accent)]"
+                  checked={form.isTrial ?? false}
+                  onChange={(event) => {
+                    updateField('isTrial', event.target.checked);
+                    if (!event.target.checked) updateField('trialEndDate', '');
+                  }}
+                />
+                <label
+                  htmlFor={`${uid}-is-trial`}
+                  className="cursor-pointer text-sm font-medium text-[var(--text-2)]"
+                >
+                  Kostenloser Trial
+                </label>
+              </div>
+
+              {form.isTrial && (
+                <div className="mt-4">
+                  <label htmlFor={`${uid}-trial-end`} className="field-label">
+                    Trial endet am
+                  </label>
+                  <input
+                    id={`${uid}-trial-end`}
+                    type="date"
+                    className="dashboard-input"
+                    value={form.trialEndDate ?? ''}
+                    onChange={(event) => updateField('trialEndDate', event.target.value)}
+                  />
+                </div>
+              )}
+            </section>
+
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
@@ -345,7 +392,7 @@ export default function SubscriptionModal({ sub, onSave, onClose }) {
             <div className="modal-sidebar-card">
               <p className="section-title">Live Preview</p>
               <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] text-2xl">
+                <div className="glass-sub-card flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl">
                   {form.icon || '📦'}
                 </div>
                 <div className="min-w-0">
@@ -357,7 +404,7 @@ export default function SubscriptionModal({ sub, onSave, onClose }) {
               </div>
 
               <div className="mt-5 grid gap-3">
-                <PreviewTile label="Monatswert" value={form.cost ? `${form.cost} €` : 'Noch offen'} />
+                <PreviewTile label="Monatswert" value={form.cost ? fmt(Number.parseFloat(String(form.cost).replace(',', '.'))) : 'Noch offen'} />
                 <PreviewTile
                   label="Status"
                   value={STATUS_OPTIONS.find((status) => status.value === form.status)?.label ?? form.status}
@@ -386,7 +433,7 @@ export default function SubscriptionModal({ sub, onSave, onClose }) {
 
 function PreviewTile({ label, value }) {
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-4">
+    <div className="glass-sub-card rounded-2xl px-4 py-4">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-4)]">
         {label}
       </p>
