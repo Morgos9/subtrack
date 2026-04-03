@@ -1,4 +1,4 @@
-import { addDays, formatDateDE, parseISODateLocal, startOfDay } from '../utils/date';
+import { addDays, parseISODateLocal, startOfDay } from '../utils/date';
 import { CATEGORIES } from '../data/subscriptions';
 
 // Transaction-list style — inspired by the Transactions panel in the mockup
@@ -13,19 +13,13 @@ export default function UpcomingBills({ subscriptions }) {
     .sort((a, b) => a.date - b.date)
     .slice(0, 5);
 
-  const fmt = date => {
-    const h = String(date.getHours()).padStart(2, '0');
-    const m = String(date.getMinutes()).padStart(2, '0');
-    return formatDateDE(date, { day: '2-digit', month: 'short' }) + ` · ${h}:${m} Uhr`;
-  };
-
   return (
-    <div className="flex flex-col gap-4 h-full">
+    <div className="flex min-h-[320px] flex-col gap-4 h-full">
       <p className="text-xs text-[var(--text-3)] uppercase tracking-widest font-medium">Bevorstehende Zahlungen</p>
 
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-1 flex-col">
         {upcoming.length === 0 && (
-          <p className="text-sm text-[var(--text-3)] py-4 text-center">Keine Zahlungen in 30 Tagen.</p>
+          <p className="flex flex-1 items-center justify-center py-6 text-center text-sm text-[var(--text-3)]">Keine Zahlungen in 30 Tagen.</p>
         )}
         {upcoming.map(s => {
           const catColor = CATEGORIES[s.category]?.color || '#94a3b8';
@@ -33,7 +27,7 @@ export default function UpcomingBills({ subscriptions }) {
           return (
             <div
               key={s.id}
-              className="flex items-center gap-3 py-2.5 border-b border-[var(--border)] last:border-0"
+              className="flex items-center gap-3 border-b border-[var(--border)] py-3 first:pt-0 last:border-0 last:pb-0"
             >
               {/* Service avatar */}
               <div

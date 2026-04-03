@@ -1,92 +1,159 @@
-import { CATEGORIES } from '../data/subscriptions';
 import { useMemo } from 'react';
+import { CATEGORIES } from '../data/subscriptions';
 
-// Concentric circles style — inspired by the Annual Profit chart in the mockup
+const currencyFormatter = new Intl.NumberFormat('de-DE', {
+  style: 'currency',
+  currency: 'EUR',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+const percentFormatter = new Intl.NumberFormat('de-DE', {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+
+const formatCurrency = (value) => currencyFormatter.format(value);
+
 export default function DonutChart({ subscriptions }) {
-  const { total, rings } = useMemo(() => {
-    const active = subscriptions.filter(s => s.status === 'active');
-    const total = active.reduce((sum, s) => sum + s.cost, 0);
+  const { total, segments, activeCount } = useMemo(() => {
+    const activeSubscriptions = subscriptions.filter((sub) => sub.status === 'active');
+    const totalValue = activeSubscriptions.reduce((sum, sub) => sum + sub.cost, 0);
 
-    const byCategory = Object.entries(
-      active.reduce((acc, s) => {
-        acc[s.category] = (acc[s.category] || 0) + s.cost;
-        return acc;
-      }, {})
+    const categories = Object.entries(
+      activeSubscriptions.reduce((accumulator, sub) => {
+        accumulator[sub.category] = (accumulator[sub.category] || 0) + sub.cost;
+        return accumulator;
+      }, {}),
     )
-      .map(([cat, amount]) => ({ cat, amount, color: CATEGORIES[cat]?.color || '#6B7280' }))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 4);
+      .map(([category, amount]) => ({
+        category,
+        amount,
+        color: CATEGORIES[category]?.color ?? '#94a3b8',
+      }))
+      .sort((left, right) => right.amount - left.amount)
+      .slice(0, 5);
 
-    // Concentric rings: largest category = outermost ring
-    const rings = byCategory.map((cat, i) => ({
-      ...cat,
-      r: 72 - i * 16,
-      opacity: 1 - i * 0.15,
-    }));
+    const radius = 58;
+    const circumference = 2 * Math.PI * radius;
+    let offset = 0;
 
-    return { total, rings };
+    const computedSegments = categories.map((segment) => {
+      const ratio = totalValue ? segment.amount / totalValue : 0;
+      const dashLength = Math.max(ratio * circumference - 4, 0);
+      const dashArray = `${dashLength} ${circumference - dashLength}`;
+      const dashOffset = -offset;
+      offset += ratio * circumference;
+
+      return {
+        ...segment,
+        ratio,
+        dashArray,
+        dashOffset,
+      };
+    });
+
+    return {
+      total: totalValue,
+      segments: computedSegments,
+      activeCount: activeSubscriptions.length,
+    };
   }, [subscriptions]);
 
-  const cx = 90;
-  const cy = 90;
-
   return (
-    <div className="flex flex-col gap-4 h-full">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-[var(--text-3)] uppercase tracking-widest font-medium">Ausgaben nach Kategorie</p>
+    <div className="flex h-full flex-col">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="section-title">Ausgaben nach Kategorie</p>
+          <p className="text-sm text-[var(--text-3)]">Verteilung der aktiven Services pro Monat.</p>
+        </div>
+        <span className="dashboard-pill">{activeCount} aktiv</span>
       </div>
 
-      <div className="flex items-center gap-5 flex-1">
-        <div className="shrink-0 relative">
-          <svg width="180" height="180" viewBox="0 0 180 180" role="img" aria-label="Ausgaben nach Kategorie">
-            <title>Ausgaben nach Kategorie</title>
-            {/* Background circle */}
-            <circle cx={cx} cy={cy} r="80" fill="rgba(255,255,255,0.02)" />
-
-            {/* Concentric filled circles */}
-            {[...rings].reverse().map((ring, i) => (
+      <div className="mt-6 flex flex-1 flex-col justify-between gap-6">
+        <div className="flex flex-1 items-center justify-center">
+          <div className="relative h-[204px] w-[204px]">
+            <svg
+              width="204"
+              height="204"
+              viewBox="0 0 204 204"
+              role="img"
+              aria-label="Ausgaben nach Kategorie"
+            >
               <circle
-                key={ring.cat}
-                cx={cx} cy={cy} r={ring.r}
-                fill={ring.color}
-                opacity={ring.opacity * 0.75}
-                style={{ transition: 'r 0.5s ease, opacity 0.5s ease' }}
+                cx="102"
+                cy="102"
+                r="70"
+                fill="none"
+                stroke="rgba(255, 255, 255, 0.05)"
+                strokeWidth="20"
               />
-            ))}
 
-            {/* Center label */}
-            <text x={cx} y={cy - 8} textAnchor="middle" fill="#f0fff4" fontSize="17" fontWeight="700">
-              {total.toFixed(0)}€
-            </text>
-            <text x={cx} y={cy + 10} textAnchor="middle" fill="#4d7a58" fontSize="10">
-              / Monat
-            </text>
-          </svg>
+              <g transform="rotate(-90 102 102)">
+                {segments.map((segment) => (
+                  <circle
+                    key={segment.category}
+                    cx="102"
+                    cy="102"
+                    r="58"
+                    fill="none"
+                    stroke={segment.color}
+                    strokeWidth="18"
+                    strokeLinecap="round"
+                    strokeDasharray={segment.dashArray}
+                    strokeDashoffset={segment.dashOffset}
+                  />
+                ))}
+              </g>
+            </svg>
+
+            <div className="absolute inset-0 flex flex-col items-center justify-center rounded-full border border-[var(--border)] bg-[radial-gradient(circle_at_top,rgba(183,243,107,0.12),transparent_60%),rgba(11,16,13,0.94)]">
+              <p className="text-xs uppercase tracking-widest text-[var(--text-3)]">Pro Monat</p>
+              <p className="mt-3 text-3xl font-bold tracking-[-0.04em] text-[var(--text-1)]">
+                {formatCurrency(total)}
+              </p>
+              <p className="mt-2 text-sm text-[var(--text-3)]">{activeCount} aktive Abos</p>
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-col gap-2 flex-1 min-w-0">
-          {rings.length === 0 && (
-            <p className="text-sm text-[var(--text-3)]">Keine aktiven Abos.</p>
+        <div className="grid gap-3">
+          {segments.length === 0 && (
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-4 text-sm text-[var(--text-3)]">
+              Keine aktiven Abos vorhanden.
+            </div>
           )}
-          {rings.map(ring => (
-            <div key={ring.cat} className="flex items-center justify-between text-sm gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: ring.color }} />
-                <span className="text-[var(--text-2)] text-xs truncate">{ring.cat}</span>
+
+          {segments.map((segment) => (
+            <div
+              key={segment.category}
+              className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-4"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span
+                  className="h-3 w-3 shrink-0 rounded-full"
+                  style={{ background: segment.color, boxShadow: `0 0 18px ${segment.color}40` }}
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-[var(--text-1)]">
+                    {segment.category}
+                  </p>
+                  <p className="mt-1 text-xs uppercase tracking-widest text-[var(--text-3)]">
+                    {percentFormatter.format(segment.ratio * 100)}%
+                  </p>
+                </div>
               </div>
-              <span className="text-[var(--text-1)] font-semibold text-xs whitespace-nowrap">
-                {ring.amount.toFixed(2)}€
-              </span>
+
+              <div className="text-right">
+                <p className="text-sm font-semibold text-[var(--text-1)]">
+                  {formatCurrency(segment.amount)}
+                </p>
+                <p className="mt-1 text-xs text-[var(--text-3)]">
+                  {formatCurrency(segment.amount * 12)} / Jahr
+                </p>
+              </div>
             </div>
           ))}
-          {rings.length > 0 && (
-            <div className="mt-1 pt-2 border-t border-[var(--border)]">
-              <div className="flex items-center justify-between text-sm gap-2">
-                <span className="text-[var(--text-3)] text-xs">Gesamt/Jahr</span>
-                <span className="text-[var(--accent)] font-bold text-xs">{(total * 12).toFixed(0)}€</span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

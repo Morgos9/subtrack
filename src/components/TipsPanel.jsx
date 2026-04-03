@@ -7,12 +7,12 @@ const TIPS = [
 
 export default function TipsPanel({ onAddSub }) {
   return (
-    <div className="flex flex-col gap-4 h-full">
+    <div className="flex min-h-[320px] flex-col gap-4 h-full">
       <p className="text-xs text-[var(--text-3)] uppercase tracking-widest font-medium">Spartipps</p>
 
       <div className="flex flex-col gap-3 flex-1">
         {TIPS.map(tip => (
-          <div key={tip.id} className="flex items-start gap-3">
+          <div key={tip.id} className="flex items-start gap-3 py-1">
             <div
               className="w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5"
               style={{
@@ -37,7 +37,7 @@ export default function TipsPanel({ onAddSub }) {
       <button
         type="button"
         onClick={onAddSub}
-        className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all"
+        className="mt-auto w-full py-3 rounded-xl font-semibold text-sm transition-all"
         style={{
           background: 'linear-gradient(135deg, #a3e635, #6bbf1c)',
           color: '#0d1410',

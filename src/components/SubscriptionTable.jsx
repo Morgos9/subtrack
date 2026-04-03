@@ -53,7 +53,7 @@ export default function SubscriptionTable({ subscriptions, onEdit, onDelete }) {
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(163,230,53,0.04)'}
                 onMouseLeave={e => e.currentTarget.style.background = ''}
               >
-                <th scope="row" className="py-3.5 px-4 font-normal text-left">
+                <th scope="row" className="py-4 px-4 font-normal text-left">
                   <div className="flex items-center gap-3">
                     <div
                       className="w-8 h-8 rounded-lg flex items-center justify-center text-base"
@@ -64,7 +64,7 @@ export default function SubscriptionTable({ subscriptions, onEdit, onDelete }) {
                     <span className="font-semibold" style={{ color: 'var(--text-1)' }}>{sub.name}</span>
                   </div>
                 </th>
-                <td className="py-3.5 px-4">
+                <td className="py-4 px-4">
                   <span
                     className="px-2 py-0.5 rounded-md text-xs font-medium"
                     style={{ background: catStyle.bg, color: catStyle.color }}
@@ -72,13 +72,13 @@ export default function SubscriptionTable({ subscriptions, onEdit, onDelete }) {
                     {sub.category}
                   </span>
                 </td>
-                <td className="py-3.5 px-4 font-bold tabular-nums" style={{ color: 'var(--text-1)' }}>
+                <td className="py-4 px-4 font-bold tabular-nums" style={{ color: 'var(--text-1)' }}>
                   {sub.cost.toFixed(2)}€
                 </td>
-                <td className="py-3.5 px-4 text-xs" style={{ color: 'var(--text-3)' }}>
+                <td className="py-4 px-4 text-xs" style={{ color: 'var(--text-3)' }}>
                   {fmt(sub.nextBilling)}
                 </td>
-                <td className="py-3.5 px-4">
+                <td className="py-4 px-4">
                   <span
                     className="px-2.5 py-1 rounded-full text-xs font-medium"
                     style={{ background: st.bg, color: st.color }}
@@ -86,7 +86,7 @@ export default function SubscriptionTable({ subscriptions, onEdit, onDelete }) {
                     {st.label}
                   </span>
                 </td>
-                <td className="py-3.5 px-4">
+                <td className="py-4 px-4">
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                     <button
                       type="button"
