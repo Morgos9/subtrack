@@ -168,7 +168,10 @@ npm run lint
 ```text
 app/
 ├── docs/
-│   └── screenshots/            # README screenshots and public repo assets
+│   ├── screenshots/                # README screenshots and public repo assets
+│   ├── codex-review-phase2.md      # Codex review findings log
+│   ├── phase2-changes.md           # Phase 2 change notes
+│   └── phase2-plan.md              # Phase 2 implementation plan
 ├── public/
 │   ├── favicon.svg
 │   └── icons.svg
@@ -180,27 +183,34 @@ app/
 │   │   └── vite.svg
 │   ├── components/
 │   │   ├── AreaChart.jsx           # 12-month spend area chart (SVG)
-│   │   ├── BarChart.jsx
-│   │   ├── DonutChart.jsx
+│   │   ├── BarChart.jsx            # monthly spend bar chart (SVG)
+│   │   ├── DonutChart.jsx          # category breakdown donut (SVG)
 │   │   ├── EmptyState.jsx          # onboarding screen for new users
-│   │   ├── LineChart.jsx
-│   │   ├── SubscriptionModal.jsx
-│   │   ├── SubscriptionTable.jsx
-│   │   ├── TipsPanel.jsx
+│   │   ├── LineChart.jsx           # spend trend line chart (SVG)
+│   │   ├── SubscriptionModal.jsx   # add/edit modal with price lookup
+│   │   ├── SubscriptionTable.jsx   # desktop table + mobile cards with swipe-to-delete
+│   │   ├── TipsPanel.jsx           # contextual savings tips
 │   │   ├── TrialBadge.jsx          # color-coded trial expiry badge
-│   │   ├── UpcomingBills.jsx
-│   │   └── UserWorkspacePanel.jsx
+│   │   ├── UpcomingBills.jsx       # upcoming renewal list
+│   │   └── UserWorkspacePanel.jsx  # workspace switcher sidebar widget
 │   ├── data/
-│   │   └── subscriptions.js    # seed data and category tokens
+│   │   └── subscriptions.js        # seed data and category tokens
 │   ├── utils/
-│   │   ├── date.js             # local date helpers
-│   │   └── priceLookup.js      # curated service lookup database
+│   │   ├── date.js                 # local date helpers
+│   │   ├── priceLookup.js          # curated service lookup database (40+ services)
+│   │   └── workspaceStore.js       # localStorage persistence layer
 │   ├── App.css
-│   ├── App.jsx                 # page orchestration and app shell
-│   ├── index.css               # tokens, component classes, responsive styles
+│   ├── App.jsx                     # page orchestration and app shell
+│   ├── index.css                   # tokens, component classes, responsive styles
 │   └── main.jsx
+├── tests/
+│   ├── calculations.test.js        # billing calculation unit tests
+│   ├── date.test.js                # date utility unit tests
+│   ├── priceLookup.test.js         # price lookup and fuzzy matching tests
+│   └── responsive.spec.js          # responsive layout tests (bottom-nav, sidebar)
 ├── index.html
 ├── package.json
+├── vitest.config.js
 ├── vite.config.js
 └── README.md
 ```
