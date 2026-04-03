@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useId, useMemo } from 'react';
 import { CATEGORIES } from '../data/subscriptions';
 
 const currencyFormatter = new Intl.NumberFormat('de-DE', {
@@ -16,6 +16,8 @@ const percentFormatter = new Intl.NumberFormat('de-DE', {
 const formatCurrency = (value) => currencyFormatter.format(value);
 
 export default function DonutChart({ subscriptions }) {
+  const glowId = useId().replace(/:/g, '');
+
   const { total, segments, activeCount } = useMemo(() => {
     const activeSubscriptions = subscriptions.filter((sub) => sub.status === 'active');
     const totalValue = activeSubscriptions.reduce((sum, sub) => sum + sub.cost, 0);
@@ -34,24 +36,33 @@ export default function DonutChart({ subscriptions }) {
       .sort((left, right) => right.amount - left.amount)
       .slice(0, 5);
 
-    const radius = 58;
-    const circumference = 2 * Math.PI * radius;
-    let offset = 0;
+    // Visual-only chart geometry (kept separate from data aggregation)
+    const ringRadius = 76;
+    const circumference = 2 * Math.PI * ringRadius;
+    const strokeWidth = 16;
+    // Gap is in "path length units" and prevents overlap (esp. with round line caps)
+    const segmentGap = strokeWidth + 2;
+    const computedSegments = categories.reduce(
+      ({ offset: currentOffset, segments: currentSegments }, segment) => {
+        const ratio = totalValue ? segment.amount / totalValue : 0;
+        const dashLength = Math.max(ratio * circumference - segmentGap, 0);
 
-    const computedSegments = categories.map((segment) => {
-      const ratio = totalValue ? segment.amount / totalValue : 0;
-      const dashLength = Math.max(ratio * circumference - 4, 0);
-      const dashArray = `${dashLength} ${circumference - dashLength}`;
-      const dashOffset = -offset;
-      offset += ratio * circumference;
-
-      return {
-        ...segment,
-        ratio,
-        dashArray,
-        dashOffset,
-      };
-    });
+        return {
+          offset: currentOffset + ratio * circumference,
+          segments: [
+            ...currentSegments,
+            {
+              ...segment,
+              ratio,
+              strokeWidth,
+              dashArray: `${dashLength} ${circumference - dashLength}`,
+              dashOffset: -currentOffset,
+            },
+          ],
+        };
+      },
+      { offset: 0, segments: [] },
+    ).segments;
 
     return {
       total: totalValue,
@@ -80,36 +91,57 @@ export default function DonutChart({ subscriptions }) {
               role="img"
               aria-label="Ausgaben nach Kategorie"
             >
+              <defs>
+                <filter id={glowId} x="-30%" y="-30%" width="160%" height="160%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="rgba(0, 0, 0, 0.35)" />
+                </filter>
+              </defs>
+
               <circle
                 cx="102"
                 cy="102"
-                r="70"
+                r="76"
                 fill="none"
-                stroke="rgba(255, 255, 255, 0.05)"
-                strokeWidth="20"
+                stroke="rgba(255, 255, 255, 0.06)"
+                strokeWidth="18"
               />
 
               <g transform="rotate(-90 102 102)">
                 {segments.map((segment) => (
-                  <circle
-                    key={segment.category}
-                    cx="102"
-                    cy="102"
-                    r="58"
-                    fill="none"
-                    stroke={segment.color}
-                    strokeWidth="18"
-                    strokeLinecap="round"
-                    strokeDasharray={segment.dashArray}
-                    strokeDashoffset={segment.dashOffset}
-                  />
+                  <g key={segment.category}>
+                    <circle
+                      cx="102"
+                      cy="102"
+                      r="76"
+                      fill="none"
+                      stroke="var(--bg)"
+                      strokeWidth={segment.strokeWidth + 4}
+                      strokeLinecap="round"
+                      strokeDasharray={segment.dashArray}
+                      strokeDashoffset={segment.dashOffset}
+                    />
+                    <circle
+                      cx="102"
+                      cy="102"
+                      r="76"
+                      fill="none"
+                      stroke={segment.color}
+                      strokeWidth={segment.strokeWidth}
+                      strokeLinecap="round"
+                      strokeDasharray={segment.dashArray}
+                      strokeDashoffset={segment.dashOffset}
+                      filter={`url(#${glowId})`}
+                    />
+                  </g>
                 ))}
               </g>
             </svg>
 
-            <div className="absolute inset-0 flex flex-col items-center justify-center rounded-full border border-[var(--border)] bg-[radial-gradient(circle_at_top,rgba(183,243,107,0.12),transparent_60%),rgba(11,16,13,0.94)]">
-              <p className="text-xs uppercase tracking-widest text-[var(--text-3)]">Pro Monat</p>
-              <p className="mt-3 text-3xl font-bold tracking-[-0.04em] text-[var(--text-1)]">
+            <div className="absolute inset-[38px] flex flex-col items-center justify-center rounded-full border border-[var(--border)] bg-[radial-gradient(circle_at_top,rgba(183,243,107,0.12),transparent_60%),rgba(11,16,13,0.92)] text-center shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--text-3)]">
+                Pro Monat
+              </p>
+              <p className="mt-3 text-3xl font-bold tabular-nums tracking-[-0.04em] text-[var(--text-1)]">
                 {formatCurrency(total)}
               </p>
               <p className="mt-2 text-sm text-[var(--text-3)]">{activeCount} aktive Abos</p>
