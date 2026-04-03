@@ -13,70 +13,92 @@ const percentFormatter = new Intl.NumberFormat('de-DE', {
 });
 
 const formatCurrency = (value) => currencyFormatter.format(value);
-const formatPercent = (value) => `${value >= 0 ? '+' : ''}${percentFormatter.format(value)}%`;
+const formatPercent = (value) =>
+  `${value >= 0 ? '+' : ''}${percentFormatter.format(value)}%`;
 
-export default function LineChart({ data }) {
+const CHART_PAD = { top: 18, right: 18, bottom: 36, left: 52 };
+
+export default function LineChart({
+  data,
+  range = '6m',
+  onRangeChange,
+  rangeOptions = [],
+}) {
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
   const W = 640;
   const H = 220;
-  const PAD = { top: 18, right: 18, bottom: 36, left: 52 };
-  const plotW = W - PAD.left - PAD.right;
-  const plotH = H - PAD.top - PAD.bottom;
+  const plotW = W - CHART_PAD.left - CHART_PAD.right;
+  const plotH = H - CHART_PAD.top - CHART_PAD.bottom;
 
-  const { points, min, max, trend } = useMemo(() => {
+  const chartState = useMemo(() => {
     const values = data.map((entry) => entry.amount);
     const rawMin = Math.min(...values);
     const rawMax = Math.max(...values);
     const basePadding = Math.max((rawMax - rawMin) * 0.2, 6);
     const minValue = Math.max(0, rawMin - basePadding);
     const maxValue = rawMax + basePadding;
-    const range = Math.max(maxValue - minValue, 1);
+    const valueRange = Math.max(maxValue - minValue, 1);
 
-    const pointsForChart = data.map((entry, index) => {
+    const points = data.map((entry, index) => {
       const position = data.length === 1 ? 0.5 : index / (data.length - 1);
       return {
         ...entry,
-        x: PAD.left + position * plotW,
-        y: PAD.top + plotH - ((entry.amount - minValue) / range) * plotH,
+        x: CHART_PAD.left + position * plotW,
+        y: CHART_PAD.top + plotH - ((entry.amount - minValue) / valueRange) * plotH,
       };
     });
 
     const latest = values[values.length - 1] ?? 0;
     const previous = values[values.length - 2] ?? latest;
-    const trendValue = previous ? ((latest - previous) / previous) * 100 : 0;
+    const average =
+      values.length > 0
+        ? values.reduce((sum, amount) => sum + amount, 0) / values.length
+        : 0;
+    const peak = points.reduce(
+      (current, point) => (!current || point.amount > current.amount ? point : current),
+      null,
+    );
 
     return {
-      points: pointsForChart,
-      min: minValue,
+      average,
       max: maxValue,
-      trend: trendValue,
+      min: minValue,
+      peak,
+      points,
+      trend: previous ? ((latest - previous) / previous) * 100 : 0,
     };
   }, [data, plotH, plotW]);
+
+  const { average, max, min, peak, points, trend } = chartState;
+  const activePoint = hoveredIndex === null ? null : points[hoveredIndex];
+  const currentValue = data[data.length - 1]?.amount ?? 0;
+  const periodLabel = data.length
+    ? data.length === 1
+      ? data[0].month
+      : `${data[0].month} bis ${data[data.length - 1].month}`
+    : 'Keine Daten';
 
   const linePath = points
     .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
     .join(' ');
 
-  const areaPath = `${linePath} L ${PAD.left + plotW} ${PAD.top + plotH} L ${PAD.left} ${PAD.top + plotH} Z`;
+  const areaPath = `${linePath} L ${CHART_PAD.left + plotW} ${CHART_PAD.top + plotH} L ${CHART_PAD.left} ${CHART_PAD.top + plotH} Z`;
 
   const yLabels = useMemo(() => {
     return Array.from({ length: 4 }, (_, index) => {
       const ratio = index / 3;
       const value = max - (max - min) * ratio;
       return {
-        y: PAD.top + plotH * ratio,
+        y: CHART_PAD.top + plotH * ratio,
         label: formatCurrency(value).replace(',00', ''),
       };
     });
   }, [max, min, plotH]);
 
-  const activePoint = hoveredIndex === null ? null : points[hoveredIndex];
-  const currentValue = data[data.length - 1]?.amount ?? 0;
-
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <p className="section-title">Monatsausgaben</p>
           <div className="flex flex-wrap items-end gap-3">
@@ -87,26 +109,34 @@ export default function LineChart({ data }) {
               {formatPercent(trend)} vs. Vormonat
             </span>
           </div>
+          <p className="mt-3 text-sm text-[var(--text-3)]">Fenster: {periodLabel}</p>
         </div>
 
-        <div
-          className="inline-flex rounded-full border p-1"
-          style={{ borderColor: 'var(--border)', background: 'var(--surface-2)' }}
-        >
-          {['6M', '1J', 'All'].map((range, index) => (
-            <button
-              key={range}
-              type="button"
-              className={`rounded-full px-3 py-2 text-xs font-semibold transition-colors ${
-                index === 0
-                  ? 'bg-[var(--accent-glow)] text-[var(--accent)]'
-                  : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
-              }`}
-            >
-              {range}
-            </button>
-          ))}
-        </div>
+        {rangeOptions.length > 0 && (
+          <div
+            className="inline-flex rounded-full border p-1"
+            style={{ borderColor: 'var(--border)', background: 'var(--surface-2)' }}
+          >
+            {rangeOptions.map((option) => {
+              const isActive = option.key === range;
+              return (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => onRangeChange?.(option.key)}
+                  className={`rounded-full px-3 py-2 text-xs font-semibold transition-colors ${
+                    isActive
+                      ? 'bg-[var(--accent-glow)] text-[var(--accent)]'
+                      : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
+                  }`}
+                  aria-pressed={isActive}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <svg
@@ -132,13 +162,13 @@ export default function LineChart({ data }) {
           <g key={`${label.label}-${index}`}>
             <line
               className="chart-grid-line"
-              x1={PAD.left}
+              x1={CHART_PAD.left}
               y1={label.y}
-              x2={PAD.left + plotW}
+              x2={CHART_PAD.left + plotW}
               y2={label.y}
             />
             <text
-              x={PAD.left - 10}
+              x={CHART_PAD.left - 10}
               y={label.y + 4}
               textAnchor="end"
               className="chart-label"
@@ -164,7 +194,7 @@ export default function LineChart({ data }) {
           <g key={point.month} onMouseEnter={() => setHoveredIndex(index)}>
             <rect
               x={point.x - plotW / Math.max(points.length, 1) / 2}
-              y={PAD.top}
+              y={CHART_PAD.top}
               width={plotW / Math.max(points.length, 1)}
               height={plotH}
               fill="transparent"
@@ -193,9 +223,9 @@ export default function LineChart({ data }) {
           <g pointerEvents="none">
             <line
               x1={activePoint.x}
-              y1={PAD.top}
+              y1={CHART_PAD.top}
               x2={activePoint.x}
-              y2={PAD.top + plotH}
+              y2={CHART_PAD.top + plotH}
               stroke="rgba(var(--accent-rgb), 0.45)"
               strokeWidth="1.5"
               strokeDasharray="4 6"
@@ -232,6 +262,28 @@ export default function LineChart({ data }) {
           </g>
         )}
       </svg>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <MetricTile label="Fenster" value={periodLabel} />
+        <MetricTile label="Ø pro Monat" value={formatCurrency(average)} />
+        <MetricTile
+          label="Peak"
+          value={peak ? formatCurrency(peak.amount) : '0,00 €'}
+          meta={peak ? peak.month : 'Keine Daten'}
+        />
+      </div>
+    </div>
+  );
+}
+
+function MetricTile({ label, value, meta }) {
+  return (
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-4)]">
+        {label}
+      </p>
+      <p className="mt-2 text-base font-semibold text-[var(--text-1)]">{value}</p>
+      {meta && <p className="mt-2 text-sm text-[var(--text-3)]">{meta}</p>}
     </div>
   );
 }
