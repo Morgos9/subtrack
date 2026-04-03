@@ -330,6 +330,11 @@ function normalize(s) {
   return s.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+const PRICE_DB_INDEX = PRICE_DB.map(entry => ({
+  entry,
+  normKeys: entry.keys.map(normalize),
+}));
+
 /**
  * Looks up subscription price data by service name.
  * Returns an array of matching entries (max 5), sorted by relevance.
@@ -341,18 +346,18 @@ export function lookupSubscriptionPrice(query) {
   if (!query || query.trim().length < 2) return [];
 
   const q = normalize(query.trim());
+  if (q.length < 2) return [];
 
-  const scored = PRICE_DB.flatMap(entry => {
+  const scored = PRICE_DB_INDEX.flatMap(({ entry, normKeys }) => {
     let best = 0;
-    for (const key of entry.keys) {
-      const k = normalize(key);
+    for (const k of normKeys) {
       if (k === q) { best = 100; break; }
       if (k.startsWith(q) || q.startsWith(k)) { best = Math.max(best, 80); continue; }
-      if (k.includes(q) || q.includes(k)) { best = Math.max(best, 60); continue; }
+      if ((q.length >= 3 && k.includes(q)) || q.includes(k)) { best = Math.max(best, 60); continue; }
       // partial overlap: shared prefix length
       let shared = 0;
       while (shared < q.length && shared < k.length && q[shared] === k[shared]) shared++;
-      if (shared >= 3) best = Math.max(best, shared * 10);
+      if (shared >= 3) best = Math.max(best, Math.min(shared * 10, 75));
     }
     return best > 0 ? [{ entry, score: best }] : [];
   });

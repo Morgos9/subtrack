@@ -29,26 +29,40 @@ export default function SubscriptionModal({ sub, onSave, onClose }) {
   const [form, setForm] = useState(() => createInitialForm(sub));
   const [priceMatches, setPriceMatches] = useState([]);
   const [selectedMatch, setSelectedMatch] = useState(null);
+  const [lookedUp, setLookedUp] = useState(false);
 
   useEffect(() => { requestAnimationFrame(() => nameRef.current?.focus()); }, []);
   useEffect(() => {
-    const fn = e => { if (e.key === 'Escape') onClose(); };
+    const fn = e => {
+      if (e.key !== 'Escape') return;
+      if (priceMatches.length > 0) {
+        e.preventDefault();
+        setPriceMatches([]);
+        setSelectedMatch(null);
+        setLookedUp(false);
+        return;
+      }
+      onClose();
+    };
     window.addEventListener('keydown', fn);
     return () => window.removeEventListener('keydown', fn);
-  }, [onClose]);
+  }, [onClose, priceMatches.length]);
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
   const handlePriceLookup = () => {
     const matches = lookupSubscriptionPrice(form.name);
+    setLookedUp(true);
     setPriceMatches(matches);
-    setSelectedMatch(matches[0] ?? null);
+    const preserved = matches.find(m => m.label === selectedMatch?.label);
+    setSelectedMatch(preserved ?? matches[0] ?? null);
   };
 
   const applyPlan = (match, plan) => {
-    setForm(f => ({ ...f, cost: plan.monthly, icon: match.icon, category: match.category }));
+    setForm(f => ({ ...f, cost: String(plan.monthly), icon: match.icon, category: match.category }));
     setPriceMatches([]);
     setSelectedMatch(null);
+    setLookedUp(false);
   };
 
   const handleSubmit = e => {
@@ -104,7 +118,7 @@ export default function SubscriptionModal({ sub, onSave, onClose }) {
                 className={fieldClass}
                 style={fieldStyle}
                 value={form.name}
-                onChange={e => { set('name', e.target.value); setPriceMatches([]); setSelectedMatch(null); }}
+                onChange={e => { set('name', e.target.value); setPriceMatches([]); setSelectedMatch(null); setLookedUp(false); }}
                 placeholder="z.B. Netflix"
                 required
               />
@@ -119,6 +133,7 @@ export default function SubscriptionModal({ sub, onSave, onClose }) {
               </button>
             </div>
 
+            <div aria-live="polite">
             {priceMatches.length > 0 && (
               <div className="mt-2 rounded-xl p-3 flex flex-col gap-2" style={{ background: 'var(--surface)', border: '1.5px solid var(--border)' }}>
                 <p className="text-xs font-medium" style={{ color: 'var(--text-3)' }}>Plan wählen:</p>
@@ -159,7 +174,7 @@ export default function SubscriptionModal({ sub, onSave, onClose }) {
                 )}
                 <button
                   type="button"
-                  onClick={() => { setPriceMatches([]); setSelectedMatch(null); }}
+                  onClick={() => { setPriceMatches([]); setSelectedMatch(null); setLookedUp(false); }}
                   className="text-xs text-left mt-1 transition-colors"
                   style={{ color: 'var(--text-3)' }}
                 >
@@ -167,6 +182,12 @@ export default function SubscriptionModal({ sub, onSave, onClose }) {
                 </button>
               </div>
             )}
+            {lookedUp && priceMatches.length === 0 && (
+              <div className="mt-2 text-xs" style={{ color: 'var(--text-3)' }}>
+                Kein Dienst gefunden.
+              </div>
+            )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
