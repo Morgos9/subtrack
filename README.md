@@ -85,12 +85,6 @@ app/
 └── package.json
 ```
 
-## Screenshots
-
-| Dashboard | Subscriptions | Analytics |
-|---|---|---|
-| ![v2](screenshot_v2.png) | ![v3](screenshot_v3.png) | ![redesign](screenshot_redesign.png) |
-
 ## Data & Privacy
 
 All data lives entirely in the browser (React state). Nothing is sent to any server. Refreshing the page resets the data to the bundled sample dataset — persistent storage is a planned feature.
