@@ -22,12 +22,8 @@ import {
 } from './utils/date';
 import { createUserRecord, loadWorkspace, persistWorkspace } from './utils/workspaceStore';
 
-const currencyFormatter = new Intl.NumberFormat('de-DE', {
-  style: 'currency',
-  currency: 'EUR',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
+const CURRENCIES = ['EUR', 'USD', 'GBP', 'CHF'];
+const CURRENCY_STORAGE_KEY = 'subtrack-currency';
 
 const percentFormatter = new Intl.NumberFormat('de-DE', {
   minimumFractionDigits: 1,
@@ -46,7 +42,6 @@ const shortDateFormatter = new Intl.DateTimeFormat('de-DE', {
   month: 'short',
 });
 
-const formatCurrency = (value) => currencyFormatter.format(value);
 const formatPercent = (value) => `${value >= 0 ? '+' : ''}${percentFormatter.format(value)}%`;
 
 function hexToRgb(hex) {
@@ -266,6 +261,24 @@ export default function App() {
   const [chartRange, setChartRange] = useState('6m');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [newUserName, setNewUserName] = useState('');
+  const [currency, setCurrency] = useState(() => {
+    if (typeof window === 'undefined') return 'EUR';
+    const stored = window.localStorage.getItem(CURRENCY_STORAGE_KEY);
+    return CURRENCIES.includes(stored) ? stored : 'EUR';
+  });
+
+  const formatCurrency = useMemo(
+    () => {
+      const formatter = new Intl.NumberFormat('de-DE', {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      return (value) => formatter.format(value);
+    },
+    [currency],
+  );
 
   const activeUser = useMemo(
     () => workspace.users.find((user) => user.id === workspace.activeUserId) ?? workspace.users[0],
@@ -433,7 +446,7 @@ export default function App() {
     },
     {
       label: 'Sofortiges Potenzial',
-      value: pausedPotential ? formatCurrency(pausedPotential) : '0,00 €',
+      value: formatCurrency(pausedPotential ?? 0),
       meta: paused.length
         ? `${paused.length} pausierte Services warten auf eine Entscheidung.`
         : 'Derzeit keine pausierten Services im Portfolio.',
@@ -472,6 +485,14 @@ export default function App() {
       theme: nextTheme,
     }));
   }, [updateActiveUser]);
+
+  const handleCurrencyChange = useCallback((nextCurrency) => {
+    if (!CURRENCIES.includes(nextCurrency)) return;
+    setCurrency(nextCurrency);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(CURRENCY_STORAGE_KEY, nextCurrency);
+    }
+  }, []);
 
   const handleCreateUser = useCallback((event) => {
     event.preventDefault();
@@ -691,7 +712,8 @@ export default function App() {
             style={{
               borderColor: 'var(--border)',
               background: 'var(--header-bg)',
-              backdropFilter: 'blur(18px)',
+              backdropFilter: 'blur(18px) saturate(160%)',
+              WebkitBackdropFilter: 'blur(18px) saturate(160%)',
             }}
           >
             <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
@@ -723,7 +745,7 @@ export default function App() {
                   </p>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-3">
+                <div className="flex shrink-0 flex-wrap items-center gap-3">
                   <button type="button" className="dashboard-icon-button" aria-label="Benachrichtigungen">
                   <Icon.Bell />
                   <span className="dashboard-notification-dot" />
@@ -783,7 +805,7 @@ export default function App() {
                     }}
                   />
 
-                  <div className="relative grid gap-6 md:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)]">
+                  <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)]">
                     <div className="flex flex-col gap-6">
                       <div className="flex flex-wrap items-center gap-3">
                         <span className="dashboard-pill dashboard-pill--accent">Live Portfolio</span>
@@ -828,7 +850,7 @@ export default function App() {
                         />
                         <HeroStat
                           label="Pausen-Potenzial"
-                          value={pausedPotential ? formatCurrency(pausedPotential) : '0,00 €'}
+                          value={formatCurrency(pausedPotential ?? 0)}
                           meta={
                             paused.length
                               ? `${paused.length} pausierte Services`
@@ -1035,7 +1057,7 @@ export default function App() {
                   <div className="panel-card panel-card--interactive flex min-h-[320px] flex-col p-6">
                     <UpcomingBills subscriptions={subs} />
                   </div>
-                  <div className="panel-card panel-card--interactive flex min-h-[320px] flex-col p-6">
+                  <div className="panel-card panel-card--interactive flex min-h-[320px] flex-col p-6 md:col-span-2 xl:col-span-1">
                     <TipsPanel onAddSub={openNewModal} />
                   </div>
                 </div>
@@ -1111,6 +1133,7 @@ export default function App() {
                               key={option.key}
                               type="button"
                               onClick={() => setFilter(option.key)}
+                              aria-pressed={isActive}
                               className={`dashboard-filter ${isActive ? 'dashboard-filter--active' : ''}`}
                             >
                               {option.label}
@@ -1208,7 +1231,7 @@ export default function App() {
                       },
                       {
                         label: 'Pausen-Potenzial',
-                        value: pausedPotential ? formatCurrency(pausedPotential) : '0,00 €',
+                        value: formatCurrency(pausedPotential ?? 0),
                         meta: paused.length
                           ? `${paused.length} Services können sofort priorisiert werden.`
                           : 'Derzeit kein pausiertes Sparpotenzial.',
@@ -1243,7 +1266,7 @@ export default function App() {
                   <div className="panel-card panel-card--interactive flex min-h-[320px] flex-col p-6">
                     <UpcomingBills subscriptions={subs} />
                   </div>
-                  <div className="panel-card panel-card--interactive flex min-h-[320px] flex-col p-6">
+                  <div className="panel-card panel-card--interactive flex min-h-[320px] flex-col p-6 md:col-span-2 xl:col-span-1">
                     <TipsPanel onAddSub={openNewModal} />
                   </div>
                 </div>
@@ -1351,6 +1374,33 @@ export default function App() {
                           </button>
                         );
                       })}
+                    </div>
+                  </div>
+
+                  <div className="panel-card p-6">
+                    <div>
+                      <p className="section-title">Darstellung</p>
+                      <h3 className="text-lg font-semibold tracking-[-0.03em] text-[var(--text-1)]">
+                        Währung
+                      </h3>
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-3)]">
+                        Wähle die Anzeigewährung für alle Beträge im Dashboard.
+                      </p>
+                    </div>
+                    <div className="mt-4">
+                      <label htmlFor="currency-select" className="field-label">
+                        Währung
+                      </label>
+                      <select
+                        id="currency-select"
+                        className="dashboard-input"
+                        value={currency}
+                        onChange={(event) => handleCurrencyChange(event.target.value)}
+                      >
+                        {CURRENCIES.map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>
