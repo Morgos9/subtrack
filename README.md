@@ -1,8 +1,8 @@
 # SubTrack
 
-SubTrack is a polished subscription intelligence dashboard built with React and Vite. It helps users understand recurring costs, upcoming renewals, portfolio composition, and savings opportunities in a fast, visual, finance-style interface.
+SubTrack is an open-source subscription dashboard built with React and Vite. It helps you keep track of recurring costs, upcoming renewals, and spending patterns in a clean, finance-style interface.
 
-It is intentionally frontend-only: no backend, no sign-in, no external API dependency at runtime. The repository is a strong starting point for building a production-ready subscription tracker, cost cockpit, or personal finance SaaS prototype.
+The project is purely frontend — no backend, no sign-in, no external API required. It started as a personal tool and is shared here as a learning reference and starting point for anyone building something similar.
 
 → **[Roadmap v1.0](ROADMAP.md)** — see what's done, what's in progress, and what's coming next.
 
@@ -52,8 +52,8 @@ Many subscription dashboards stop at showing a table of services. SubTrack pushe
 
 - Information hierarchy: the most important cost and renewal signals are visible immediately
 - Decision support: paused subscriptions, top categories, and renewal pressure are surfaced as actionable insights
-- Responsive usability: the same product remains usable on narrow mobile viewports without falling apart
-- Design quality: the UI aims for product-level polish rather than a default admin-template look
+- Responsive usability: the same interface works on narrow mobile viewports without falling apart
+- Design quality: the UI aims for a clean, polished look rather than a generic admin-template
 
 ## Tech Stack
 
@@ -275,7 +275,7 @@ Edit `src/utils/priceLookup.js` to:
 
 ## Current Limitations
 
-This repository is intentionally focused on frontend product quality and fast local iteration. At the moment it does not include:
+This project is intentionally focused on frontend quality and fast local iteration. At the moment it does not include:
 
 - authenticated multi-user support across devices
 - server-side data syncing
