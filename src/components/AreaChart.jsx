@@ -1,16 +1,18 @@
 import { useMemo, useId, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 const PAD = { top: 20, right: 16, bottom: 40, left: 56 };
 const W = 640;
 const H = 220;
 const PLOT_W = W - PAD.left - PAD.right;
 const PLOT_H = H - PAD.top - PAD.bottom;
+const MotionDiv = motion.div;
 
 export default function AreaChart({ data = [], formatCurrency }) {
   const fmt = typeof formatCurrency === 'function' ? formatCurrency : (v) => `${Number(v).toFixed(2)} €`;
   const gradientId = useId();
   const [hoveredIndex, setHoveredIndex] = useState(null);
+  const shouldReduceMotion = useReducedMotion();
 
   const safeData = (data || []).map(d => ({ ...d, amount: Number.isFinite(Number(d?.amount)) ? Number(d.amount) : 0 }));
 
@@ -67,11 +69,11 @@ export default function AreaChart({ data = [], formatCurrency }) {
   const activePoint = hoveredIndex !== null ? points[hoveredIndex] : null;
 
   return (
-    <motion.div
+    <MotionDiv
       className="glass-sub-card rounded-2xl p-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.4 }}
+      transition={{ duration: shouldReduceMotion ? 0 : 0.4 }}
     >
       <p className="section-title">12-Monats-Trend</p>
       <h3 className="mt-1 text-xl font-semibold tracking-[-0.04em] text-[var(--text-1)]">
@@ -82,7 +84,7 @@ export default function AreaChart({ data = [], formatCurrency }) {
         <svg
           className="mt-5 h-[220px] w-full"
           viewBox={`0 0 ${W} ${H}`}
-          preserveAspectRatio="none"
+          preserveAspectRatio="xMidYMid meet"
           role="img"
           aria-label="12-Monats Area Chart der monatlichen Ausgaben"
           onMouseLeave={() => setHoveredIndex(null)}
@@ -215,6 +217,6 @@ export default function AreaChart({ data = [], formatCurrency }) {
           Keine historischen Daten verfügbar.
         </div>
       )}
-    </motion.div>
+    </MotionDiv>
   );
 }

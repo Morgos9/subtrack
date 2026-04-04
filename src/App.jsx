@@ -4,6 +4,7 @@ import {
   useDeferredValue,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -48,6 +49,7 @@ const shortDateFormatter = new Intl.DateTimeFormat('de-DE', {
 });
 
 const formatPercent = (value) => `${value >= 0 ? '+' : ''}${percentFormatter.format(value)}%`;
+const MotionDiv = motion.div;
 
 function hexToRgb(hex) {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -276,6 +278,9 @@ export default function App() {
     const stored = window.localStorage.getItem(CURRENCY_STORAGE_KEY);
     return CURRENCIES.includes(stored) ? stored : 'EUR';
   });
+  const [undoState, setUndoState] = useState(null);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef(null);
 
   const formatCurrency = useMemo(
     () => {
@@ -310,6 +315,18 @@ export default function App() {
   useEffect(() => {
     persistWorkspace(workspace);
   }, [workspace]);
+
+  useEffect(() => {
+    if (!notifOpen) return;
+
+    const handleMouseDown = (event) => {
+      if (notifRef.current?.contains(event.target)) return;
+      setNotifOpen(false);
+    };
+
+    window.addEventListener('mousedown', handleMouseDown);
+    return () => window.removeEventListener('mousedown', handleMouseDown);
+  }, [notifOpen]);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -392,6 +409,11 @@ export default function App() {
 
   const dueSoonCount = useMemo(
     () => renewalsInWindow.filter((sub) => sub.date <= next7Days).length,
+    [next7Days, renewalsInWindow],
+  );
+
+  const dueSoonItems = useMemo(
+    () => renewalsInWindow.filter((sub) => sub.date <= next7Days),
     [next7Days, renewalsInWindow],
   );
 
@@ -631,11 +653,38 @@ export default function App() {
     const sub = subs.find((entry) => entry.id === id);
     if (!window.confirm(`Abo wirklich löschen${sub ? `: ${sub.name}` : ''}?`)) return;
 
+    if (undoState?.timeoutId) window.clearTimeout(undoState.timeoutId);
+
     updateActiveUser((user) => ({
       ...user,
       subscriptions: user.subscriptions.filter((entry) => entry.id !== id),
     }));
-  }, [subs, updateActiveUser]);
+
+    if (!sub) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setUndoState(null);
+    }, 5000);
+
+    setUndoState({ sub, userId: activeUser.id, timeoutId });
+  }, [activeUser.id, subs, undoState, updateActiveUser]);
+
+  const handleUndo = useCallback(() => {
+    if (!undoState) return;
+
+    if (undoState.timeoutId) window.clearTimeout(undoState.timeoutId);
+
+    const { sub, userId } = undoState;
+    setWorkspace((current) => ({
+      ...current,
+      users: current.users.map((user) => {
+        if (user.id !== userId) return user;
+        if (user.subscriptions.some((entry) => entry.id === sub.id)) return user;
+        return { ...user, subscriptions: [...user.subscriptions, sub] };
+      }),
+    }));
+    setUndoState(null);
+  }, [undoState]);
 
   return (
     <div className="min-h-screen text-[color:var(--text-1)]">
@@ -766,10 +815,79 @@ export default function App() {
                 </div>
 
                 <div className="flex shrink-0 flex-wrap items-center gap-3">
-                  <button type="button" className="dashboard-icon-button" aria-label="Benachrichtigungen">
-                  <Icon.Bell />
-                  <span className="dashboard-notification-dot" />
-                </button>
+                  <div ref={notifRef} className="relative">
+                    <button
+                      type="button"
+                      className="dashboard-icon-button"
+                      aria-label="Benachrichtigungen"
+                      onClick={() => setNotifOpen((open) => !open)}
+                    >
+                      <Icon.Bell />
+                      {(dueSoonCount > 0 || trialsSoon.length > 0) && (
+                        <span className="dashboard-notification-dot" />
+                      )}
+                    </button>
+
+                    {notifOpen && (
+                      <div className="absolute top-full right-0 mt-2 w-80 glass-sub-card rounded-2xl p-4 z-50">
+                        <p className="text-sm font-semibold text-[var(--text-1)]">Benachrichtigungen</p>
+
+                        {dueSoonItems.length === 0 && trialsSoon.length === 0 ? (
+                          <p className="mt-3 text-sm text-[var(--text-3)]">Keine aktuellen Hinweise</p>
+                        ) : (
+                          <div className="mt-4 space-y-4">
+                            {dueSoonItems.length > 0 && (
+                              <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-4)]">
+                                  Fällig in 7 Tagen
+                                </p>
+                                <ul className="mt-2 space-y-2">
+                                  {dueSoonItems.map((sub) => (
+                                    <li key={`due-${sub.id}`} className="flex items-start justify-between gap-3">
+                                      <div className="min-w-0">
+                                        <p className="truncate text-sm font-semibold text-[var(--text-1)]">
+                                          {sub.name}
+                                        </p>
+                                        <p className="mt-1 text-xs text-[var(--text-3)]">
+                                          {shortDateFormatter.format(sub.date)}
+                                        </p>
+                                      </div>
+                                      <span className="text-xs font-semibold text-[var(--text-2)]">
+                                        {formatCurrency(sub.cost)}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {trialsSoon.length > 0 && (
+                              <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-4)]">
+                                  Trials enden in 14 Tagen
+                                </p>
+                                <ul className="mt-2 space-y-2">
+                                  {trialsSoon.map((sub) => (
+                                    <li key={`trial-${sub.id}`} className="flex items-start justify-between gap-3">
+                                      <div className="min-w-0">
+                                        <p className="truncate text-sm font-semibold text-[var(--text-1)]">
+                                          {sub.name}
+                                        </p>
+                                        <p className="mt-1 text-xs text-[var(--text-3)]">
+                                          {sub.trialDaysLeft} Tage übrig
+                                        </p>
+                                      </div>
+                                      <TrialBadge trialEndDate={sub.trialEndDate} />
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
                 <button
                   type="button"
@@ -810,7 +928,7 @@ export default function App() {
 
           <div className="main-content-area flex flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
             <AnimatePresence mode="wait">
-            <motion.div
+            <MotionDiv
               key={page}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1155,7 +1273,7 @@ export default function App() {
                     <UpcomingBills subscriptions={subs} formatCurrency={formatCurrency} />
                   </div>
                   <div className="panel-card panel-card--interactive flex min-h-[320px] flex-col p-6 md:col-span-2 xl:col-span-1">
-                    <TipsPanel onAddSub={openNewModal} />
+                    <TipsPanel onAddSub={openNewModal} subscriptions={subs} formatCurrency={formatCurrency} />
                   </div>
                 </div>
               </div>
@@ -1382,7 +1500,7 @@ export default function App() {
                     <UpcomingBills subscriptions={subs} formatCurrency={formatCurrency} />
                   </div>
                   <div className="panel-card panel-card--interactive flex min-h-[320px] flex-col p-6 md:col-span-2 xl:col-span-1">
-                    <TipsPanel onAddSub={openNewModal} />
+                    <TipsPanel onAddSub={openNewModal} subscriptions={subs} formatCurrency={formatCurrency} />
                   </div>
                 </div>
 
@@ -1614,14 +1732,14 @@ export default function App() {
                 </div>
               </div>
             )}
-            </motion.div>
+            </MotionDiv>
             </AnimatePresence>
           </div>
         </main>
 
         <AnimatePresence>
           {modal && (
-            <motion.div
+            <MotionDiv
               key={modal === 'new' ? 'new' : modal.id}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1635,12 +1753,29 @@ export default function App() {
                 onClose={closeModal}
                 formatCurrency={formatCurrency}
               />
-            </motion.div>
+            </MotionDiv>
           )}
         </AnimatePresence>
       </div>
 
       {/* Bottom Navigation — Mobile only (< 768px), gesteuert via CSS */}
+      {undoState && (
+        <div
+          className="fixed bottom-6 right-6 z-50 glass-sub-card px-4 py-3 rounded-2xl flex items-center gap-3"
+          role="status"
+          aria-live="polite"
+        >
+          <p className="text-sm font-semibold text-[var(--text-2)]">Abo gelöscht</p>
+          <button
+            type="button"
+            onClick={handleUndo}
+            className="dashboard-pill dashboard-pill--accent"
+          >
+            Rückgängig
+          </button>
+        </div>
+      )}
+
       <nav className="bottom-nav" aria-label="Mobile Navigation">
         {NAV_ITEMS.map((item) => {
           const isActive = page === item.id;
@@ -1696,7 +1831,7 @@ function HeroStat({ label, value, meta, icon, accent = false }) {
 
 function KpiCard({ label, value, sub, subAccent = false, animIndex = 0 }) {
   return (
-    <motion.div
+    <MotionDiv
       className="panel-card panel-card--interactive relative flex min-h-[138px] flex-col overflow-hidden p-6"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -1717,6 +1852,6 @@ function KpiCard({ label, value, sub, subAccent = false, animIndex = 0 }) {
           background: 'radial-gradient(circle, rgba(var(--accent-rgb), 0.16) 0%, transparent 72%)',
         }}
       />
-    </motion.div>
+    </MotionDiv>
   );
 }

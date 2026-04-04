@@ -1,26 +1,81 @@
-const TIPS = [
-  {
-    id: 1,
-    done: true,
-    title: 'Jahresabo prüfen',
-    sub: 'Bis zu 20% günstiger als monatliche Abrechnung.',
-  },
-  {
-    id: 2,
-    done: true,
-    title: 'Familien-Plan nutzen',
-    sub: 'Kosten auf mehrere Nutzer verteilen und Redundanzen abbauen.',
-  },
-  {
-    id: 3,
-    done: false,
-    title: 'Pausierte Abos kündigen',
-    sub: 'Sofortpotenzial: rund 8,99 € Ersparnis pro Monat.',
-  },
-];
+import { useMemo } from 'react';
 
-export default function TipsPanel({ onAddSub }) {
-  const completedTips = TIPS.filter((tip) => tip.done).length;
+function buildDynamicTips(subscriptions, formatCurrency) {
+  const tips = [];
+
+  const active = subscriptions.filter((s) => s.status === 'active');
+  const paused = subscriptions.filter((s) => s.status === 'paused');
+
+  // Tip: pausierte Abos kündigen
+  if (paused.length > 0) {
+    const savings = paused.reduce((sum, s) => sum + s.cost, 0);
+    tips.push({
+      id: 'paused',
+      done: false,
+      title: `${paused.length} pausierte${paused.length === 1 ? 's Abo' : ' Abos'} kündigen`,
+      sub: `Sofortpotenzial: ${formatCurrency(savings)} Ersparnis pro Monat.`,
+    });
+  }
+
+  // Tip: Jahresabo prüfen (monatliche Abos mit Kosten > 5€)
+  const monthlyExpensive = active.filter((s) => s.billing === 'monthly' && s.cost > 5);
+  if (monthlyExpensive.length > 0) {
+    tips.push({
+      id: 'yearly',
+      done: false,
+      title: 'Jahresabo prüfen',
+      sub: `${monthlyExpensive.length} Abo${monthlyExpensive.length === 1 ? '' : 's'} könnte${monthlyExpensive.length === 1 ? '' : 'n'} als Jahresplan bis zu 20% günstiger sein.`,
+    });
+  }
+
+  // Tip: Duplikate in gleicher Kategorie
+  const categoryCount = active.reduce((acc, s) => {
+    acc[s.category] = (acc[s.category] ?? 0) + 1;
+    return acc;
+  }, {});
+  const dupCategory = Object.entries(categoryCount).find(([, count]) => count >= 2);
+  if (dupCategory) {
+    tips.push({
+      id: 'duplicate',
+      done: false,
+      title: `Doppelte ${dupCategory[0]}-Abos prüfen`,
+      sub: `Du hast ${dupCategory[1]} aktive Abos in der Kategorie "${dupCategory[0]}". Prüfe ob alle nötig sind.`,
+    });
+  }
+
+  // Tip: Familien-Plan (wenn Streaming vorhanden)
+  const streaming = active.filter((s) => s.category === 'Streaming');
+  if (streaming.length >= 2) {
+    tips.push({
+      id: 'family',
+      done: false,
+      title: 'Familien-Plan nutzen',
+      sub: 'Kosten auf mehrere Nutzer verteilen und Streaming-Redundanzen abbauen.',
+    });
+  }
+
+  // Fallback wenn nichts zutrifft
+  if (tips.length === 0) {
+    tips.push({
+      id: 'good',
+      done: true,
+      title: 'Portfolio gut aufgestellt',
+      sub: 'Keine offensichtlichen Einsparpotenziale gefunden. Weiter so!',
+    });
+  }
+
+  return tips.slice(0, 3);
+}
+
+export default function TipsPanel({ onAddSub, subscriptions = [], formatCurrency }) {
+  const fmt = formatCurrency ?? ((v) => `${Number(v).toFixed(2)} €`);
+
+  const tips = useMemo(
+    () => buildDynamicTips(subscriptions, fmt),
+    [subscriptions, fmt],
+  );
+
+  const completedTips = tips.filter((tip) => tip.done).length;
 
   return (
     <div className="flex h-full flex-col">
@@ -32,12 +87,12 @@ export default function TipsPanel({ onAddSub }) {
           </p>
         </div>
         <span className="dashboard-pill dashboard-pill--accent">
-          {completedTips}/{TIPS.length}
+          {completedTips}/{tips.length}
         </span>
       </div>
 
       <div className="mt-6 flex flex-1 flex-col gap-3">
-        {TIPS.map((tip) => (
+        {tips.map((tip) => (
           <div
             key={tip.id}
             className="glass-sub-card rounded-2xl px-4 py-4"

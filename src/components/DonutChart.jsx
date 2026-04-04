@@ -24,8 +24,15 @@ export default function DonutChart({ subscriptions, formatCurrency }) {
         amount,
         color: CATEGORIES[category]?.color ?? '#94a3b8',
       }))
-      .sort((left, right) => right.amount - left.amount)
-      .slice(0, 5);
+      .sort((left, right) => right.amount - left.amount);
+
+    const MAX_SEGMENTS = 5;
+    const visibleCategories = categories.slice(0, MAX_SEGMENTS);
+    const restCategories = categories.slice(MAX_SEGMENTS);
+    if (restCategories.length > 0) {
+      const restAmount = restCategories.reduce((sum, c) => sum + c.amount, 0);
+      visibleCategories.push({ category: 'Sonstige', amount: restAmount, color: '#64748b' });
+    }
 
     // Visual-only chart geometry (kept separate from data aggregation)
     const ringRadius = 76;
@@ -33,7 +40,7 @@ export default function DonutChart({ subscriptions, formatCurrency }) {
     const strokeWidth = 16;
     // Gap is in "path length units" and prevents overlap (esp. with round line caps)
     const segmentGap = strokeWidth + 2;
-    const computedSegments = categories.reduce(
+    const computedSegments = visibleCategories.reduce(
       ({ offset: currentOffset, segments: currentSegments }, segment) => {
         const ratio = totalValue ? segment.amount / totalValue : 0;
         const dashLength = Math.max(ratio * circumference - segmentGap, 0);

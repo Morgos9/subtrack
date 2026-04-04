@@ -42,6 +42,7 @@ export default function SubscriptionModal({ sub, onSave, onClose, formatCurrency
   const uid = useId();
   const nameRef = useRef(null);
   const [form, setForm] = useState(() => createInitialForm(sub));
+  const [errors, setErrors] = useState({});
   const [priceMatches, setPriceMatches] = useState([]);
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [lookedUp, setLookedUp] = useState(false);
@@ -96,15 +97,27 @@ export default function SubscriptionModal({ sub, onSave, onClose, formatCurrency
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (!form.name.trim() || form.cost === '') return;
+
+    let hasError = false;
+    if (!form.name.trim()) {
+      hasError = true;
+      setErrors({ name: 'Dienstname ist erforderlich' });
+    }
 
     const cost = Number.parseFloat(String(form.cost).replace(',', '.'));
-    if (!Number.isFinite(cost)) return;
+    if (form.cost === '' || !Number.isFinite(cost)) {
+      hasError = true;
+      setErrors((prev) => ({ ...prev, cost: 'Gueltiger Betrag erforderlich' }));
+    }
+
+    if (hasError) return;
+
+    setErrors({});
 
     onSave({
       ...form,
       cost,
-      id: sub?.id || Date.now(),
+      id: sub?.id || crypto.randomUUID(),
       trialEndDate: form.isTrial && form.trialEndDate ? form.trialEndDate : null,
     });
   };
@@ -152,7 +165,7 @@ export default function SubscriptionModal({ sub, onSave, onClose, formatCurrency
         </div>
 
         <div className="mt-6 grid gap-6 md:grid-cols-[minmax(0,1.2fr)_320px]">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
             <section className="modal-section">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div className="min-w-0 flex-1">
@@ -166,6 +179,11 @@ export default function SubscriptionModal({ sub, onSave, onClose, formatCurrency
                     value={form.name}
                     onChange={(event) => {
                       updateField('name', event.target.value);
+                      setErrors((prev) => {
+                        if (!prev.name) return prev;
+                        const { name: _name, ...rest } = prev;
+                        return rest;
+                      });
                       setPriceMatches([]);
                       setSelectedMatch(null);
                       setLookedUp(false);
@@ -173,6 +191,9 @@ export default function SubscriptionModal({ sub, onSave, onClose, formatCurrency
                     placeholder="z. B. Netflix"
                     required
                   />
+                  {errors.name && (
+                    <p className="text-red-400 text-xs mt-1">{errors.name}</p>
+                  )}
                 </div>
 
                 <button
@@ -252,10 +273,20 @@ export default function SubscriptionModal({ sub, onSave, onClose, formatCurrency
                     min="0"
                     className="dashboard-input"
                     value={form.cost}
-                    onChange={(event) => updateField('cost', event.target.value)}
+                    onChange={(event) => {
+                      updateField('cost', event.target.value);
+                      setErrors((prev) => {
+                        if (!prev.cost) return prev;
+                        const { cost: _cost, ...rest } = prev;
+                        return rest;
+                      });
+                    }}
                     placeholder="9.99"
                     required
                   />
+                  {errors.cost && (
+                    <p className="text-red-400 text-xs mt-1">{errors.cost}</p>
+                  )}
                 </div>
 
                 <div>

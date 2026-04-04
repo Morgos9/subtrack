@@ -1,8 +1,11 @@
 import { motion } from 'framer-motion';
 
+const MotionDiv = motion.div;
+const MotionButton = motion.button;
+
 export default function EmptyState({ onAdd }) {
   return (
-    <motion.div
+    <MotionDiv
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
@@ -17,7 +20,7 @@ export default function EmptyState({ onAdd }) {
       }}
     >
       {/* Illustration */}
-      <motion.div
+      <MotionDiv
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.1, ease: 'easeOut' }}
@@ -50,10 +53,10 @@ export default function EmptyState({ onAdd }) {
           <path d="M8 15h4" />
           <path d="M15 15h.5" />
         </svg>
-      </motion.div>
+      </MotionDiv>
 
       {/* Text */}
-      <motion.div
+      <MotionDiv
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.18, ease: 'easeOut' }}
@@ -80,10 +83,10 @@ export default function EmptyState({ onAdd }) {
         >
           Füge dein erstes Abo hinzu und behalte den Überblick über alle laufenden Services.
         </p>
-      </motion.div>
+      </MotionDiv>
 
       {/* CTA Button */}
-      <motion.button
+      <MotionButton
         type="button"
         onClick={onAdd}
         initial={{ opacity: 0, y: 8 }}
@@ -109,7 +112,7 @@ export default function EmptyState({ onAdd }) {
           <path d="M5 12h14" />
         </svg>
         <span>Erstes Abo hinzufügen</span>
-      </motion.button>
-    </motion.div>
+      </MotionButton>
+    </MotionDiv>
   );
 }

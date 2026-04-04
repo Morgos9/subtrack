@@ -103,7 +103,7 @@ export default function LineChart({
         label: formatCurrency(value).replace(',00', ''),
       };
     });
-  }, [max, min, plotH]);
+  }, [formatCurrency, max, min, plotH]);
 
   return (
     <div className="flex h-full flex-col">
@@ -152,7 +152,7 @@ export default function LineChart({
         <svg
           className="mt-6 h-[220px] w-full"
           viewBox={`0 0 ${W} ${H}`}
-          preserveAspectRatio="none"
+          preserveAspectRatio="xMidYMid meet"
           role="img"
           aria-label="Monatliche Ausgaben als Liniendiagramm"
           onMouseLeave={() => setHoveredIndex(null)}

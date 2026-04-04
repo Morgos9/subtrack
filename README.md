@@ -78,6 +78,7 @@ The dashboard is the main decision surface. It combines:
 - category concentration
 - trial tracker section: upcoming trial expirations with color-coded urgency
 - spend trend over time
+- notification bell with dropdown for upcoming renewals and expiring trials
 - direct navigation into management workflows
 
 ### 2. Subscription Management
@@ -86,7 +87,9 @@ The subscriptions area supports:
 
 - searching by service name
 - filtering by active, paused, and cancelled status
-- editing and deleting entries
+- sortable columns: click any header (name, cost, billing date) to sort ascending or descending
+- editing and deleting entries with a 5-second undo toast after deletion
+- inline form validation with field-level error messages
 - swipe-to-delete gesture on mobile with animated slide-out and red delete indicator
 - optimized mobile cards for smaller screens
 - trial end-date tracking with color-coded badge per entry
@@ -101,7 +104,7 @@ The analytics page provides:
 - a selectable time window for spend history bar chart
 - trend vs. previous month
 - peak period visibility
-- category composition donut chart
+- category composition donut chart with an automatic "Other" segment when more than five categories are present
 - renewal pressure context
 
 ### 4. Settings
@@ -114,7 +117,11 @@ Settings focus on workspace and visual customization:
 - per-user persistent theme selection
 - live workspace-style preview
 
-### 5. Price Lookup
+### 5. Savings Tips
+
+The dashboard includes a contextual tips panel that generates actionable suggestions based on the actual portfolio: paused subscriptions ready to cancel, expensive monthly plans worth switching to annual billing, and duplicate services within the same category. Tips update dynamically as the portfolio changes.
+
+### 6. Price Lookup
 
 The subscription modal includes a lookup helper based on a curated service database. It is intended to speed up data entry by suggesting common services and plan prices and normalizing them to monthly equivalents for consistent analytics.
 
@@ -294,6 +301,10 @@ The UI improvements in this version focus on:
 - clearer panel hierarchy
 - stronger contrast in actionable controls
 - responsive subscription management without horizontal scrolling on mobile
+- `prefers-reduced-motion` support via Framer Motion's `useReducedMotion` hook
+- `aria-sort` attributes on sortable table columns
+- inline form errors with `aria-live` regions for screen readers
+- undo toast pattern to prevent accidental data loss
 
 ## Contributing
 

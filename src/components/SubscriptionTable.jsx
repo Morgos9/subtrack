@@ -4,6 +4,8 @@ import { CATEGORIES } from '../data/subscriptions';
 import { formatDateDE, parseISODateLocal } from '../utils/date';
 import TrialBadge from './TrialBadge';
 
+const MotionDiv = motion.div;
+
 const isTouchDevice = () => {
   if (typeof window === 'undefined') return false;
   if (window.innerWidth < 768) return true;
@@ -14,7 +16,7 @@ function SwipeableRow({ id, onDelete, children }) {
   const [dismissed, setDismissed] = useState(false);
 
   const handleDragEnd = (_event, info) => {
-    if (info.offset.x < -80) {
+    if (info.offset.x < -120) {
       setDismissed(true);
     }
   };
@@ -26,7 +28,7 @@ function SwipeableRow({ id, onDelete, children }) {
   return (
     <AnimatePresence onExitComplete={() => { if (dismissed) onDelete(id); }}>
       {!dismissed && (
-        <motion.div
+        <MotionDiv
           className="relative overflow-hidden rounded-2xl"
           initial={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0, marginBottom: 0 }}
@@ -54,7 +56,7 @@ function SwipeableRow({ id, onDelete, children }) {
           </div>
 
           {/* Die eigentliche Karte — gleitet nach links */}
-          <motion.div
+          <MotionDiv
             drag="x"
             dragConstraints={{ left: -100, right: 0 }}
             dragElastic={0.1}
@@ -65,8 +67,8 @@ function SwipeableRow({ id, onDelete, children }) {
             style={{ touchAction: 'pan-y' }}
           >
             {children}
-          </motion.div>
-        </motion.div>
+          </MotionDiv>
+        </MotionDiv>
       )}
     </AnimatePresence>
   );
@@ -93,16 +95,40 @@ const BILLING_LABELS = {
   yearly: 'Jährlich',
 };
 
-const HEADERS = [
-  'Dienst',
-  'Kategorie',
-  'Kosten / Mo.',
-  'Nächste Abbuchung',
-  'Status',
-  'Aktionen',
+const SORTABLE_HEADERS = [
+  { label: 'Dienst', key: 'name' },
+  { label: 'Kategorie', key: null },
+  { label: 'Kosten / Mo.', key: 'cost' },
+  { label: 'Nächste Abbuchung', key: 'nextBilling' },
+  { label: 'Status', key: null },
+  { label: 'Aktionen', key: null },
 ];
 
-export default function SubscriptionTable({ subscriptions = [], onEdit, onDelete, onPause, formatCurrency }) {
+export default function SubscriptionTable({ subscriptions = [], onEdit, onDelete, formatCurrency }) {
+  const [sortKey, setSortKey] = useState(null);
+  const [sortDir, setSortDir] = useState('asc');
+
+  const handleSort = (key) => {
+    if (!key) return;
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const sorted = sortKey
+    ? [...subscriptions].sort((a, b) => {
+        let av = a[sortKey];
+        let bv = b[sortKey];
+        if (sortKey === 'cost') { av = Number(av); bv = Number(bv); }
+        if (av < bv) return sortDir === 'asc' ? -1 : 1;
+        if (av > bv) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+      })
+    : subscriptions;
+
   const formatBillingDate = (dateString) => {
     const parsed = parseISODateLocal(dateString);
     if (!parsed) return '—';
@@ -214,20 +240,29 @@ export default function SubscriptionTable({ subscriptions = [], onEdit, onDelete
         <table className="w-full min-w-[920px] text-sm" aria-label="Abonnement-Tabelle">
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {HEADERS.map((header) => (
+              {SORTABLE_HEADERS.map(({ label, key }) => (
                 <th
-                  key={header}
+                  key={label}
                   scope="col"
-                  className="px-4 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-4)]"
+                  className={`px-4 py-4 text-left text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-4)]${key ? ' cursor-pointer select-none hover:text-[var(--text-2)] transition-colors' : ''}`}
+                  aria-sort={key && sortKey === key ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
+                  onClick={() => handleSort(key)}
                 >
-                  {header}
+                  <span className="flex items-center gap-1">
+                    {label}
+                    {key && (
+                      <span className="opacity-40" aria-hidden="true">
+                        {sortKey === key ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ' ↕'}
+                      </span>
+                    )}
+                  </span>
                 </th>
               ))}
             </tr>
           </thead>
 
           <tbody>
-            {subscriptions.map((sub) => {
+            {sorted.map((sub) => {
               const category = CATEGORIES[sub.category] ?? CATEGORIES.Other;
               const status = STATUS_STYLES[sub.status] ?? STATUS_STYLES.cancelled;
 
